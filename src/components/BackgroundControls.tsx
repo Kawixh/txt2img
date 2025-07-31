@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -350,14 +349,7 @@ export function BackgroundControls() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Palette size={20} />
-          Background Controls
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-6">
         {/* Background Type */}
         <div className="space-y-2">
           <Label>Background Type</Label>
@@ -453,7 +445,6 @@ export function BackgroundControls() {
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

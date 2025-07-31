@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApp } from '@/contexts/AppContext';
@@ -26,40 +25,32 @@ export function TextInput() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Plus size={20} />
-          Add Text
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="text-input">Text Content</Label>
-          <Input
-            id="text-input"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Enter your text here..."
-            disabled={state.isLoading}
-          />
-        </div>
-        <Button
-          onClick={handleAddText}
-          disabled={!inputText.trim() || state.isLoading}
-          className="w-full"
-        >
-          <Plus size={16} className="mr-2" />
-          Add Text Element
-        </Button>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="text-input">Text Content</Label>
+        <Input
+          id="text-input"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Enter your text here..."
+          disabled={state.isLoading}
+        />
+      </div>
+      <Button
+        onClick={handleAddText}
+        disabled={!inputText.trim() || state.isLoading}
+        className="w-full"
+      >
+        <Plus size={16} className="mr-2" />
+        Add Text Element
+      </Button>
 
-        {state.textElements.length > 0 && (
-          <div className="text-muted-foreground text-sm">
-            {state.textElements.length} text element(s) on canvas
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {state.textElements.length > 0 && (
+        <div className="text-muted-foreground text-sm">
+          {state.textElements.length} text element(s) on canvas
+        </div>
+      )}
+    </div>
   );
 }

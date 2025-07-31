@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Move, ToggleLeft, ToggleRight } from 'lucide-react';
 import { PositionPreset } from '@/types';
 import { getPresetGrid } from '@/lib/positioning';
@@ -20,19 +19,9 @@ export function PositionControls() {
 
   if (!selectedElement) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Move size={20} />
-            Position Controls
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-muted-foreground py-8 text-center text-sm">
-            Select a text element to edit its position and size
-          </div>
-        </CardContent>
-      </Card>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Select a text element to edit its position and size
+      </div>
     );
   }
 
@@ -52,14 +41,7 @@ export function PositionControls() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Move size={20} />
-          Position Controls
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-6">
         {/* Text Box Width */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -278,7 +260,6 @@ export function PositionControls() {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }
