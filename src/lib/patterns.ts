@@ -59,10 +59,13 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       const adjustedSize = `${size}px ${size}px`;
       const adjustedSpacing = `${spacing}px 0, ${spacing}px 0, 0 0, 0 0`;
 
+      // Convert opacity to alpha channel in colors instead of using opacity property
+      const primaryColorWithOpacity = `${primaryColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      
       return {
-        backgroundColor,
-        opacity,
-        backgroundImage: `linear-gradient(135deg, ${primaryColor} 25%, transparent 25%), linear-gradient(225deg, ${primaryColor} 25%, transparent 25%), linear-gradient(45deg, ${primaryColor} 25%, transparent 25%), linear-gradient(315deg, ${primaryColor} 25%, ${backgroundColor} 25%)`,
+        backgroundColor: backgroundColorWithOpacity,
+        backgroundImage: `linear-gradient(135deg, ${primaryColorWithOpacity} 25%, transparent 25%), linear-gradient(225deg, ${primaryColorWithOpacity} 25%, transparent 25%), linear-gradient(45deg, ${primaryColorWithOpacity} 25%, transparent 25%), linear-gradient(315deg, ${primaryColorWithOpacity} 25%, ${backgroundColorWithOpacity} 25%)`,
         backgroundPosition: adjustedSpacing,
         backgroundSize: adjustedSize,
         backgroundRepeat: 'repeat',
@@ -87,12 +90,16 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       size: true,
       spacing: false,
     },
-    generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => ({
-      backgroundColor,
-      opacity,
-      backgroundImage: `radial-gradient(circle, ${primaryColor} 1px, transparent 1px)`,
-      backgroundSize: `${size}px ${size}px`,
-    }),
+    generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
+      const primaryColorWithOpacity = `${primaryColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      
+      return {
+        backgroundColor: backgroundColorWithOpacity,
+        backgroundImage: `radial-gradient(circle, ${primaryColorWithOpacity} 1px, transparent 1px)`,
+        backgroundSize: `${size}px ${size}px`,
+      };
+    },
   },
   {
     id: 'grid',
@@ -113,12 +120,16 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       size: true,
       spacing: false,
     },
-    generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => ({
-      backgroundColor,
-      opacity,
-      backgroundImage: `linear-gradient(${primaryColor} 1px, transparent 1px), linear-gradient(90deg, ${primaryColor} 1px, transparent 1px)`,
-      backgroundSize: `${size}px ${size}px`,
-    }),
+    generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
+      const primaryColorWithOpacity = `${primaryColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      
+      return {
+        backgroundColor: backgroundColorWithOpacity,
+        backgroundImage: `linear-gradient(${primaryColorWithOpacity} 1px, transparent 1px), linear-gradient(90deg, ${primaryColorWithOpacity} 1px, transparent 1px)`,
+        backgroundSize: `${size}px ${size}px`,
+      };
+    },
   },
   {
     id: 'stripes',
@@ -139,12 +150,16 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       size: true,
       spacing: false,
     },
-    generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => ({
-      backgroundColor,
-      opacity,
-      backgroundImage: `linear-gradient(45deg, ${primaryColor} 25%, transparent 25%, transparent 75%, ${primaryColor} 75%)`,
-      backgroundSize: `${size}px ${size}px`,
-    }),
+    generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
+      const primaryColorWithOpacity = `${primaryColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      
+      return {
+        backgroundColor: backgroundColorWithOpacity,
+        backgroundImage: `linear-gradient(45deg, ${primaryColorWithOpacity} 25%, transparent 25%, transparent 75%, ${primaryColorWithOpacity} 75%)`,
+        backgroundSize: `${size}px ${size}px`,
+      };
+    },
   },
   {
     id: 'zigzag',
@@ -165,12 +180,16 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       size: true,
       spacing: false,
     },
-    generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => ({
-      backgroundColor,
-      opacity,
-      backgroundImage: `linear-gradient(135deg, ${primaryColor} 25%, transparent 25%, transparent 50%, ${primaryColor} 50%, ${primaryColor} 75%, transparent 75%)`,
-      backgroundSize: `${size}px ${size}px`,
-    }),
+    generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
+      const primaryColorWithOpacity = `${primaryColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      
+      return {
+        backgroundColor: backgroundColorWithOpacity,
+        backgroundImage: `linear-gradient(135deg, ${primaryColorWithOpacity} 25%, transparent 25%, transparent 50%, ${primaryColorWithOpacity} 50%, ${primaryColorWithOpacity} 75%, transparent 75%)`,
+        backgroundSize: `${size}px ${size}px`,
+      };
+    },
   },
   {
     id: 'hexagons',
@@ -196,10 +215,12 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       const hexSize = `${size * 2}px ${size * 3}px`;
       const hexPosition = `0 0, ${size}px ${size * 1.5}px`;
 
+      const primaryColorWithOpacity = `${primaryColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      
       return {
-        backgroundColor,
-        opacity,
-        backgroundImage: `radial-gradient(circle farthest-side at 0% 50%, transparent 23.5%, ${primaryColor} 0 24.5%, transparent 0), radial-gradient(circle farthest-side at 50% 35%, transparent 23.5%, ${primaryColor} 0 24.5%, transparent 0)`,
+        backgroundColor: backgroundColorWithOpacity,
+        backgroundImage: `radial-gradient(circle farthest-side at 0% 50%, transparent 23.5%, ${primaryColorWithOpacity} 0 24.5%, transparent 0), radial-gradient(circle farthest-side at 50% 35%, transparent 23.5%, ${primaryColorWithOpacity} 0 24.5%, transparent 0)`,
         backgroundSize: hexSize,
         backgroundPosition: hexPosition,
       };
@@ -229,10 +250,12 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       const triSize = `${size * 1.5}px ${size * 2.6}px`;
       const triPosition = `0 0, ${size * 0.75}px ${size * 1.3}px`;
 
+      const primaryColorWithOpacity = `${primaryColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+      
       return {
-        backgroundColor,
-        opacity,
-        backgroundImage: `linear-gradient(60deg, ${primaryColor} 25%, transparent 25%, transparent 75%, ${primaryColor} 75%), linear-gradient(-60deg, ${primaryColor} 25%, transparent 25%, transparent 75%, ${primaryColor} 75%)`,
+        backgroundColor: backgroundColorWithOpacity,
+        backgroundImage: `linear-gradient(60deg, ${primaryColorWithOpacity} 25%, transparent 25%, transparent 75%, ${primaryColorWithOpacity} 75%), linear-gradient(-60deg, ${primaryColorWithOpacity} 25%, transparent 25%, transparent 75%, ${primaryColorWithOpacity} 75%)`,
         backgroundSize: triSize,
         backgroundPosition: triPosition,
       };
