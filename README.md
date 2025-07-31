@@ -37,12 +37,14 @@ Built with the good stuff:
 ## 🏃‍♂️ Quick Start
 
 1. **Clone this beauty:**
+
    ```bash
    git clone <your-repo-url>
    cd txt2img
    ```
 
 2. **Install the goodies:**
+
    ```bash
    pnpm install
    # or if you're more of a npm person
@@ -50,6 +52,7 @@ Built with the good stuff:
    ```
 
 3. **Fire it up:**
+
    ```bash
    pnpm dev
    # or
@@ -88,6 +91,7 @@ src/
 ## 🔮 Future Ideas
 
 Got some cool ideas brewing for future versions:
+
 - 🖼️ Image backgrounds
 - 🎭 Text effects and shadows
 - 📐 More positioning tools

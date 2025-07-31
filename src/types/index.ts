@@ -1,3 +1,15 @@
+export type PositionPreset =
+  | 'manual'
+  | 'center'
+  | 'center-left'
+  | 'center-right'
+  | 'top-center'
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-center'
+  | 'bottom-left'
+  | 'bottom-right';
+
 export interface TextElement {
   id: string;
   content: string;
@@ -10,6 +22,11 @@ export interface TextElement {
   textDecoration: 'none' | 'underline';
   color: string;
   textAlign: 'left' | 'center' | 'right';
+  width: number;
+  positionPreset: PositionPreset;
+  paddingX: number;
+  paddingY: number;
+  wordWrap: boolean;
 }
 
 export type BackgroundType = 'solid' | 'transparent' | 'gradient' | 'pattern';

@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useApp } from "@/contexts/AppContext";
-import { toPng } from "html-to-image";
-import { AlertCircle, CheckCircle, Download, Loader2 } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useApp } from '@/contexts/AppContext';
+import { toPng } from 'html-to-image';
+import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
 
 export function ExportControls() {
   const { state, setExportStatus, setError } = useApp();
 
   const handleExport = async () => {
     try {
-      setExportStatus("loading");
+      setExportStatus('loading');
       setError(null);
 
-      const canvas = document.getElementById("text-canvas");
+      const canvas = document.getElementById('text-canvas');
       if (!canvas) {
-        throw new Error("Canvas element not found");
+        throw new Error('Canvas element not found');
       }
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      console.log("Starting export with html-to-image...");
+      console.log('Starting export with html-to-image...');
 
       const dataUrl = await toPng(canvas, {
         backgroundColor: undefined,
@@ -30,24 +30,24 @@ export function ExportControls() {
         pixelRatio: 2,
         cacheBust: true,
         quality: 1.0, // Maximum quality
-        preferredFontFormat: "woff2", // Optimize font loading
+        preferredFontFormat: 'woff2', // Optimize font loading
         skipAutoScale: false, // Allow auto-scaling for large images
         includeQueryParams: false, // Clean URLs
         style: {
           width: `${state.canvasSettings.width}px`,
           height: `${state.canvasSettings.height}px`,
           // Force hardware acceleration if available
-          transform: "translateZ(0)",
+          transform: 'translateZ(0)',
         },
         filter: (node) => {
           // Skip elements marked for export exclusion
-          if (node.classList?.contains("ignore-export")) {
+          if (node.classList?.contains('ignore-export')) {
             return false;
           }
 
           // Skip script tags and other non-visual elements
           const tagName = node.tagName?.toLowerCase();
-          if (["script", "noscript", "meta", "title"].includes(tagName)) {
+          if (['script', 'noscript', 'meta', 'title'].includes(tagName)) {
             return false;
           }
 
@@ -56,7 +56,7 @@ export function ExportControls() {
       });
 
       // Create and trigger download
-      const link = document.createElement("a");
+      const link = document.createElement('a');
       link.download = `text-image-${Date.now()}.png`;
       link.href = dataUrl;
 
@@ -64,15 +64,15 @@ export function ExportControls() {
       link.click();
       document.body.removeChild(link);
 
-      console.log("Export successful!");
-      setExportStatus("success");
-      setTimeout(() => setExportStatus("idle"), 3000);
+      console.log('Export successful!');
+      setExportStatus('success');
+      setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
-      console.error("Export failed:", error);
-      setError(error instanceof Error ? error.message : "Export failed");
-      setExportStatus("error");
+      console.error('Export failed:', error);
+      setError(error instanceof Error ? error.message : 'Export failed');
+      setExportStatus('error');
       setTimeout(() => {
-        setExportStatus("idle");
+        setExportStatus('idle');
         setError(null);
       }, 5000);
     }
@@ -80,21 +80,21 @@ export function ExportControls() {
 
   const getButtonContent = () => {
     switch (state.exportStatus) {
-      case "loading":
+      case 'loading':
         return (
           <>
             <Loader2 size={16} className="mr-2 animate-spin" />
             Exporting...
           </>
         );
-      case "success":
+      case 'success':
         return (
           <>
             <CheckCircle size={16} className="mr-2" />
             Exported!
           </>
         );
-      case "error":
+      case 'error':
         return (
           <>
             <AlertCircle size={16} className="mr-2" />
@@ -113,22 +113,22 @@ export function ExportControls() {
 
   const getButtonVariant = () => {
     switch (state.exportStatus) {
-      case "success":
-        return "default";
-      case "error":
-        return "destructive";
+      case 'success':
+        return 'default';
+      case 'error':
+        return 'destructive';
       default:
-        return "default";
+        return 'default';
     }
   };
 
   const isDisabled =
-    state.exportStatus === "loading" || state.textElements.length === 0;
+    state.exportStatus === 'loading' || state.textElements.length === 0;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Download size={20} />
           Export Image
         </CardTitle>
@@ -146,37 +146,37 @@ export function ExportControls() {
           </Button>
 
           {state.textElements.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center">
+            <p className="text-muted-foreground text-center text-sm">
               Add some text elements to export
             </p>
           )}
 
           {state.error && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-              <p className="text-sm text-destructive">
-                <AlertCircle size={14} className="inline mr-1" />
+            <div className="bg-destructive/10 border-destructive/20 rounded-md border p-3">
+              <p className="text-destructive text-sm">
+                <AlertCircle size={14} className="mr-1 inline" />
                 {state.error}
               </p>
             </div>
           )}
 
-          {state.exportStatus === "success" && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+          {state.exportStatus === 'success' && (
+            <div className="rounded-md border border-green-200 bg-green-50 p-3">
               <p className="text-sm text-green-700">
-                <CheckCircle size={14} className="inline mr-1" />
+                <CheckCircle size={14} className="mr-1 inline" />
                 Image exported successfully!
               </p>
             </div>
           )}
         </div>
 
-        <div className="text-xs text-muted-foreground space-y-1">
+        <div className="text-muted-foreground space-y-1 text-xs">
           <p>• High resolution (2x scale)</p>
           <p>• PNG format with transparency support</p>
           <p>• Modern CSS color support</p>
           <p>• SVG-based rendering engine</p>
           <p>
-            • Current size: {state.canvasSettings.width} ×{" "}
+            • Current size: {state.canvasSettings.width} ×{' '}
             {state.canvasSettings.height}px
           </p>
         </div>

@@ -1,4 +1,4 @@
-import { formatRgb, lab, oklch, parse, rgb } from "culori";
+import { formatRgb, lab, oklch, parse, rgb } from 'culori';
 
 /**
  * Convert an oklch color string to rgba format
@@ -97,10 +97,10 @@ export function convertColorToRgba(colorString: string): string {
  * Fallback color map for problematic colors
  */
 const fallbackColors: Record<string, string> = {
-  "lab(29.2345% 39.3825 20.0664)": "rgba(95, 39, 205, 1)",
-  "lab(50% 0 0)": "rgba(119, 119, 119, 1)",
-  "oklch(0.5 0.2 180)": "rgba(0, 128, 128, 1)",
-  "oklch(0.7 0.15 180)": "rgba(86, 180, 205, 1)",
+  'lab(29.2345% 39.3825 20.0664)': 'rgba(95, 39, 205, 1)',
+  'lab(50% 0 0)': 'rgba(119, 119, 119, 1)',
+  'oklch(0.5 0.2 180)': 'rgba(0, 128, 128, 1)',
+  'oklch(0.7 0.15 180)': 'rgba(86, 180, 205, 1)',
   // Add more common conversions as needed
 };
 
@@ -123,7 +123,7 @@ export function convertColorWithFallback(colorString: string): string {
 
   // Ultimate fallback
   console.warn(`Using ultimate fallback for color: ${colorString}`);
-  return "rgba(0, 0, 0, 1)";
+  return 'rgba(0, 0, 0, 1)';
 }
 
 /**
@@ -150,28 +150,28 @@ export function convertOklchInElement(element: Element): void {
   // Process inline styles
   if (element instanceof HTMLElement && element.style) {
     const properties = [
-      "color",
-      "backgroundColor",
-      "borderColor",
-      "borderTopColor",
-      "borderRightColor",
-      "borderBottomColor",
-      "borderLeftColor",
-      "outlineColor",
-      "textDecorationColor",
-      "boxShadow",
-      "textShadow",
-      "fill", // for SVG
-      "stroke", // for SVG
+      'color',
+      'backgroundColor',
+      'borderColor',
+      'borderTopColor',
+      'borderRightColor',
+      'borderBottomColor',
+      'borderLeftColor',
+      'outlineColor',
+      'textDecorationColor',
+      'boxShadow',
+      'textShadow',
+      'fill', // for SVG
+      'stroke', // for SVG
     ] as const;
 
     properties.forEach((prop) => {
       const value = element.style[prop];
       if (
         value &&
-        (value.includes("oklch") ||
-          value.includes("lab") ||
-          value.includes("lch"))
+        (value.includes('oklch') ||
+          value.includes('lab') ||
+          value.includes('lch'))
       ) {
         try {
           const converted = convertColorWithFallback(value);
@@ -196,19 +196,19 @@ export function convertOklchInElement(element: Element): void {
   // Process computed styles as fallback
   try {
     const computed = window.getComputedStyle(element);
-    ["color", "backgroundColor", "borderColor"].forEach((prop) => {
+    ['color', 'backgroundColor', 'borderColor'].forEach((prop) => {
       const value = computed.getPropertyValue(prop);
       if (
         value &&
-        (value.includes("oklch") ||
-          value.includes("lab") ||
-          value.includes("lch"))
+        (value.includes('oklch') ||
+          value.includes('lab') ||
+          value.includes('lch'))
       ) {
         const converted = convertColorWithFallback(value);
         (element as HTMLElement).style.setProperty(
           prop,
           converted,
-          "important",
+          'important',
         );
       }
     });

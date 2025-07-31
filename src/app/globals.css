@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "tailwindcss-animate";
 
@@ -44,8 +44,8 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --animate-shine: shine infinite linear;
-  --noise-ink-jet-glass3d: url("https://www.transparenttextures.com/patterns/black-orchid.png");
-  --noise-egg-shell-glass3d: url("https://www.transparenttextures.com/patterns/egg-shell.png");
+  --noise-ink-jet-glass3d: url('https://www.transparenttextures.com/patterns/black-orchid.png');
+  --noise-egg-shell-glass3d: url('https://www.transparenttextures.com/patterns/egg-shell.png');
 
   @keyframes shine {
     from {

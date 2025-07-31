@@ -1,25 +1,33 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { useApp } from '@/contexts/AppContext'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
+import React from 'react';
+import { useApp } from '@/contexts/AppContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Type, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight } from 'lucide-react'
-import { FontFamily } from '@/types'
+} from '@/components/ui/select';
+import {
+  Type,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+} from 'lucide-react';
+import { FontFamily } from '@/types';
 
 const FONT_FAMILIES: FontFamily[] = [
   'Arial',
-  'Helvetica', 
+  'Helvetica',
   'Times New Roman',
   'Georgia',
   'Courier New',
@@ -27,42 +35,42 @@ const FONT_FAMILIES: FontFamily[] = [
   'Impact',
   'Comic Sans MS',
   'Trebuchet MS',
-  'Palatino'
-]
+  'Palatino',
+];
 
 export function FontControls() {
-  const { state, updateTextElement } = useApp()
-  
+  const { state, updateTextElement } = useApp();
+
   const selectedElement = state.textElements.find(
-    element => element.id === state.selectedElementId
-  )
+    (element) => element.id === state.selectedElementId,
+  );
 
   if (!selectedElement) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Type size={20} />
             Font Controls
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground text-center py-8">
+          <div className="text-muted-foreground py-8 text-center text-sm">
             Select a text element to edit its properties
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   const updateSelectedElement = (updates: Partial<typeof selectedElement>) => {
-    updateTextElement(selectedElement.id, updates)
-  }
+    updateTextElement(selectedElement.id, updates);
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Type size={20} />
           Font Controls
         </CardTitle>
@@ -73,14 +81,20 @@ export function FontControls() {
           <Label>Font Family</Label>
           <Select
             value={selectedElement.fontFamily}
-            onValueChange={(value: FontFamily) => updateSelectedElement({ fontFamily: value })}
+            onValueChange={(value: FontFamily) =>
+              updateSelectedElement({ fontFamily: value })
+            }
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {FONT_FAMILIES.map((font) => (
-                <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                <SelectItem
+                  key={font}
+                  value={font}
+                  style={{ fontFamily: font }}
+                >
                   {font}
                 </SelectItem>
               ))}
@@ -93,7 +107,9 @@ export function FontControls() {
           <Label>Font Size: {selectedElement.fontSize}px</Label>
           <Slider
             value={[selectedElement.fontSize]}
-            onValueChange={([value]) => updateSelectedElement({ fontSize: value })}
+            onValueChange={([value]) =>
+              updateSelectedElement({ fontSize: value })
+            }
             min={8}
             max={200}
             step={1}
@@ -106,29 +122,50 @@ export function FontControls() {
           <Label>Style</Label>
           <div className="flex gap-2">
             <Button
-              variant={selectedElement.fontWeight === 'bold' ? 'default' : 'outline'}
+              variant={
+                selectedElement.fontWeight === 'bold' ? 'default' : 'outline'
+              }
               size="sm"
-              onClick={() => updateSelectedElement({ 
-                fontWeight: selectedElement.fontWeight === 'bold' ? 'normal' : 'bold' 
-              })}
+              onClick={() =>
+                updateSelectedElement({
+                  fontWeight:
+                    selectedElement.fontWeight === 'bold' ? 'normal' : 'bold',
+                })
+              }
             >
               <Bold size={16} />
             </Button>
             <Button
-              variant={selectedElement.fontStyle === 'italic' ? 'default' : 'outline'}
+              variant={
+                selectedElement.fontStyle === 'italic' ? 'default' : 'outline'
+              }
               size="sm"
-              onClick={() => updateSelectedElement({ 
-                fontStyle: selectedElement.fontStyle === 'italic' ? 'normal' : 'italic' 
-              })}
+              onClick={() =>
+                updateSelectedElement({
+                  fontStyle:
+                    selectedElement.fontStyle === 'italic'
+                      ? 'normal'
+                      : 'italic',
+                })
+              }
             >
               <Italic size={16} />
             </Button>
             <Button
-              variant={selectedElement.textDecoration === 'underline' ? 'default' : 'outline'}
+              variant={
+                selectedElement.textDecoration === 'underline'
+                  ? 'default'
+                  : 'outline'
+              }
               size="sm"
-              onClick={() => updateSelectedElement({ 
-                textDecoration: selectedElement.textDecoration === 'underline' ? 'none' : 'underline' 
-              })}
+              onClick={() =>
+                updateSelectedElement({
+                  textDecoration:
+                    selectedElement.textDecoration === 'underline'
+                      ? 'none'
+                      : 'underline',
+                })
+              }
             >
               <Underline size={16} />
             </Button>
@@ -140,21 +177,27 @@ export function FontControls() {
           <Label>Text Alignment</Label>
           <div className="flex gap-2">
             <Button
-              variant={selectedElement.textAlign === 'left' ? 'default' : 'outline'}
+              variant={
+                selectedElement.textAlign === 'left' ? 'default' : 'outline'
+              }
               size="sm"
               onClick={() => updateSelectedElement({ textAlign: 'left' })}
             >
               <AlignLeft size={16} />
             </Button>
             <Button
-              variant={selectedElement.textAlign === 'center' ? 'default' : 'outline'}
+              variant={
+                selectedElement.textAlign === 'center' ? 'default' : 'outline'
+              }
               size="sm"
               onClick={() => updateSelectedElement({ textAlign: 'center' })}
             >
               <AlignCenter size={16} />
             </Button>
             <Button
-              variant={selectedElement.textAlign === 'right' ? 'default' : 'outline'}
+              variant={
+                selectedElement.textAlign === 'right' ? 'default' : 'outline'
+              }
               size="sm"
               onClick={() => updateSelectedElement({ textAlign: 'right' })}
             >
@@ -166,13 +209,13 @@ export function FontControls() {
         {/* Text Color */}
         <div className="space-y-2">
           <Label htmlFor="text-color">Text Color</Label>
-          <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2">
             <Input
               id="text-color"
               type="color"
               value={selectedElement.color}
               onChange={(e) => updateSelectedElement({ color: e.target.value })}
-              className="w-12 h-10 p-1 border rounded"
+              className="h-10 w-12 rounded border p-1"
             />
             <Input
               value={selectedElement.color}
@@ -184,5 +227,5 @@ export function FontControls() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

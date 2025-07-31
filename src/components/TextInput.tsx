@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useApp } from "@/contexts/AppContext";
-import { Plus } from "lucide-react";
-import React, { useState } from "react";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useApp } from '@/contexts/AppContext';
+import { Plus } from 'lucide-react';
+import React, { useState } from 'react';
 
 export function TextInput() {
   const { addTextElement, state } = useApp();
-  const [inputText, setInputText] = useState("");
+  const [inputText, setInputText] = useState('');
 
   const handleAddText = () => {
     if (inputText.trim()) {
       addTextElement(inputText.trim());
-      setInputText("");
+      setInputText('');
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       handleAddText();
     }
   };
@@ -28,7 +28,7 @@ export function TextInput() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Plus size={20} />
           Add Text
         </CardTitle>
@@ -55,7 +55,7 @@ export function TextInput() {
         </Button>
 
         {state.textElements.length > 0 && (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             {state.textElements.length} text element(s) on canvas
           </div>
         )}
