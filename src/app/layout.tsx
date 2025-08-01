@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import { PostHogProvider } from './providers';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -14,8 +15,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Glim | Text to Image Creator - Design Vibes ✨',
-  description: 'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
-  keywords: ['text to image', 'design tool', 'aesthetic', 'visual creator', 'font generator', 'creative tool', 'gen z', 'design vibes'],
+  description:
+    'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
+  keywords: [
+    'text to image',
+    'design tool',
+    'aesthetic',
+    'visual creator',
+    'font generator',
+    'creative tool',
+    'gen z',
+    'design vibes',
+  ],
   authors: [{ name: 'Glim Team' }],
   creator: 'Glim',
   publisher: 'Glim',
@@ -30,7 +41,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Glim | Text to Image Creator - Design Vibes ✨',
-    description: 'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
+    description:
+      'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
     url: 'https://glim.dev',
     siteName: 'Glim',
     images: [
@@ -47,7 +59,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Glim | Text to Image Creator - Design Vibes ✨',
-    description: 'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
+    description:
+      'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
     images: ['/og-image.png'],
     creator: '@glimdev',
   },
@@ -81,12 +94,16 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#000000" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <PostHogProvider>{children}</PostHogProvider>
       </body>
     </html>
   );
