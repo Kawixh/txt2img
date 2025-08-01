@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import {
   Type,
   Bold,
@@ -21,10 +22,12 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Loader2,
+  Search,
 } from 'lucide-react';
-import { FontFamily } from '@/types';
+import { GoogleFont } from '@/types';
 
-const FONT_FAMILIES: FontFamily[] = [
+const FALLBACK_FONTS = [
   'Arial',
   'Helvetica',
   'Times New Roman',
@@ -37,12 +40,92 @@ const FONT_FAMILIES: FontFamily[] = [
   'Palatino',
 ];
 
+const FONT_CATEGORIES: Array<{ value: GoogleFont['category'] | 'all'; label: string }> = [
+  { value: 'all', label: 'All Categories' },
+  { value: 'sans-serif', label: 'Sans Serif' },
+  { value: 'serif', label: 'Serif' },
+  { value: 'display', label: 'Display' },
+  { value: 'handwriting', label: 'Handwriting' },
+  { value: 'monospace', label: 'Monospace' },
+];
+
 export function FontControls() {
-  const { state, updateTextElement } = useApp();
+  const { 
+    state, 
+    updateTextElement,
+    fetchFonts,
+    loadFont,
+    setSearchQuery,
+    setSelectedCategory,
+    getFilteredFonts,
+  } = useApp();
 
   const selectedElement = state.textElements.find(
     (element) => element.id === state.selectedElementId,
   );
+
+  // Initialize Google Fonts on component mount
+  useEffect(() => {
+    if (state.fonts.fonts.length === 0 && !state.fonts.isLoading) {
+      fetchFonts({ sort: 'popularity' });
+    }
+  }, [fetchFonts, state.fonts.fonts.length, state.fonts.isLoading]);
+
+  // Prepare font options for the combobox
+  const fontOptions: ComboboxOption[] = useMemo(() => {
+    const googleFonts = getFilteredFonts();
+    
+    // Always include fallback fonts, with Google Fonts first if available
+    const fallbackOptions = FALLBACK_FONTS.map(font => ({
+      value: font,
+      label: font,
+      category: 'system' as const,
+    }));
+
+    if (googleFonts.length === 0) {
+      return fallbackOptions;
+    }
+
+    const googleFontOptions = googleFonts.map(font => ({
+      value: font.family,
+      label: font.family,
+      category: font.category,
+      preview: font.family,
+    }));
+
+    // Combine Google Fonts with fallback fonts, removing duplicates
+    const allOptions = [...googleFontOptions, ...fallbackOptions];
+    const uniqueOptions = allOptions.filter((option, index, self) => 
+      index === self.findIndex(o => o.value === option.value)
+    );
+
+    return uniqueOptions;
+  }, [getFilteredFonts]);
+
+  const handleFontChange = async (fontFamily: string) => {
+    if (!selectedElement) return;
+
+    // Update the text element immediately
+    updateTextElement(selectedElement.id, { fontFamily });
+
+    // Load the font if it's a Google Font
+    const isGoogleFont = state.fonts.fonts.some(f => f.family === fontFamily);
+    if (isGoogleFont && !state.fonts.loadedFonts.has(fontFamily)) {
+      try {
+        await loadFont(fontFamily);
+      } catch (error) {
+        console.error('Failed to load font:', error);
+      }
+    }
+  };
+
+  const handleCategoryChange = (category: GoogleFont['category'] | 'all') => {
+    setSelectedCategory(category === 'all' ? '' : category);
+  };
+
+  const handleFontSearch = (query: string) => {
+    setSearchQuery(query);
+  };
 
   if (!selectedElement) {
     return (
@@ -58,30 +141,70 @@ export function FontControls() {
 
   return (
     <div className="space-y-6">
-      {/* Font Family */}
+      {/* Font Category Filter */}
       <div className="space-y-2">
-        <Label>Font Family</Label>
+        <Label>Font Category</Label>
         <Select
-          value={selectedElement.fontFamily}
-          onValueChange={(value: FontFamily) =>
-            updateSelectedElement({ fontFamily: value })
-          }
+          value={state.fonts.selectedCategory || 'all'}
+          onValueChange={handleCategoryChange}
         >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {FONT_FAMILIES.map((font) => (
-              <SelectItem
-                key={font}
-                value={font}
-                style={{ fontFamily: font }}
-              >
-                {font}
+            {FONT_CATEGORIES.map((category) => (
+              <SelectItem key={category.value} value={category.value}>
+                {category.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Font Family */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2">
+          Font Family
+          {state.fonts.isLoadingFont && (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          )}
+        </Label>
+        <Combobox
+          options={fontOptions}
+          value={selectedElement.fontFamily}
+          onValueChange={handleFontChange}
+          onSearch={handleFontSearch}
+          placeholder="Search fonts..."
+          searchPlaceholder="Type to search fonts..."
+          emptyMessage={state.fonts.isLoading ? 'Loading fonts...' : 'No fonts found.'}
+          loading={state.fonts.isLoading}
+          renderOption={(option) => (
+            <div className="flex-1">
+              <div 
+                className="font-medium" 
+                style={{ fontFamily: option.preview || option.label }}
+              >
+                {option.label}
+              </div>
+              <div className="text-xs text-muted-foreground capitalize">
+                {option.category}
+              </div>
+            </div>
+          )}
+        />
+        {state.fonts.error && (
+          <p className="text-sm text-amber-600">
+            {state.fonts.error.includes('API key') 
+              ? 'Using system fonts. Configure Google Fonts API key for more options.' 
+              : state.fonts.error
+            }
+          </p>
+        )}
+        {state.fonts.fonts.length === 0 && !state.fonts.isLoading && !state.fonts.error && (
+          <p className="text-sm text-gray-500">
+            Using system fonts. Add Google Fonts API key for more options.
+          </p>
+        )}
       </div>
 
       {/* Font Size */}

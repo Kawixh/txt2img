@@ -86,16 +86,41 @@ export interface AppState {
   isLoading: boolean;
   error: string | null;
   exportStatus: 'idle' | 'loading' | 'success' | 'error';
+  fonts: FontsState;
 }
 
-export type FontFamily =
-  | 'Arial'
-  | 'Helvetica'
-  | 'Times New Roman'
-  | 'Georgia'
-  | 'Courier New'
-  | 'Verdana'
-  | 'Impact'
-  | 'Comic Sans MS'
-  | 'Trebuchet MS'
-  | 'Palatino';
+export type FontFamily = string;
+
+export interface GoogleFont {
+  family: string;
+  variants: string[];
+  subsets: string[];
+  version: string;
+  lastModified: string;
+  files: Record<string, string>;
+  category: 'serif' | 'sans-serif' | 'display' | 'handwriting' | 'monospace';
+  kind: string;
+}
+
+export interface GoogleFontsResponse {
+  kind: string;
+  items: GoogleFont[];
+  error?: string;
+}
+
+export interface FontSearchOptions {
+  sort?: 'alpha' | 'date' | 'popularity' | 'style' | 'trending';
+  category?: GoogleFont['category'];
+  subset?: string;
+}
+
+export interface FontsState {
+  fonts: GoogleFont[];
+  popularFonts: GoogleFont[];
+  searchQuery: string;
+  selectedCategory: GoogleFont['category'] | '';
+  isLoading: boolean;
+  isLoadingFont: boolean;
+  error: string | null;
+  loadedFonts: Set<string>;
+}
