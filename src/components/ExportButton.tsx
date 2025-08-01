@@ -2,8 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/contexts/AppContext';
-import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
 import { reliableExporter } from '@/lib/reliable-export';
+import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
+import posthog from 'posthog-js';
 
 export function ExportButton() {
   const { state, setExportStatus, setError } = useApp();
@@ -38,6 +39,7 @@ export function ExportButton() {
       // Download the image
       reliableExporter.downloadImage(dataUrl, `text-image-${Date.now()}.png`);
 
+      posthog.capture('image-exported');
       setExportStatus('success');
       setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
