@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useApp } from '@/contexts/AppContext';
 import { toPng } from 'html-to-image';
 import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
+import { googleFontsManager } from '@/lib/google-fonts';
 
 export function ExportControls() {
   const { state, setExportStatus, setError } = useApp();
@@ -19,9 +20,11 @@ export function ExportControls() {
         throw new Error('Canvas element not found');
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      console.log('Starting export with html-to-image...');
+      console.log('Ensuring all fonts are ready for export...');
+      // Ensure all fonts used in text elements are ready
+      const fontFamilies = state.textElements.map(element => element.fontFamily);
+      await googleFontsManager.ensureAllFontsReady(fontFamilies);
+      console.log('All fonts ready, starting export with html-to-image...');
 
       const dataUrl = await toPng(canvas, {
         backgroundColor: undefined,
@@ -33,6 +36,8 @@ export function ExportControls() {
         preferredFontFormat: 'woff2', // Optimize font loading
         skipAutoScale: false, // Allow auto-scaling for large images
         includeQueryParams: false, // Clean URLs
+        skipFonts: false, // Don't skip fonts
+        fontEmbedCSS: '', // Let html-to-image handle font embedding
         style: {
           width: `${state.canvasSettings.width}px`,
           height: `${state.canvasSettings.height}px`,
@@ -48,6 +53,14 @@ export function ExportControls() {
           // Skip script tags and other non-visual elements
           const tagName = node.tagName?.toLowerCase();
           if (['script', 'noscript', 'meta', 'title'].includes(tagName)) {
+            return false;
+          }
+
+          // Skip Google Fonts stylesheets to avoid CORS issues
+          if (node.tagName?.toLowerCase() === 'link' && 
+              (node as HTMLLinkElement).rel === 'stylesheet' &&
+              (node as HTMLLinkElement).href?.includes('fonts.googleapis.com')) {
+            console.log('Skipping Google Fonts stylesheet to avoid CORS:', (node as HTMLLinkElement).href);
             return false;
           }
 
@@ -69,12 +82,63 @@ export function ExportControls() {
       setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
       console.error('Export failed:', error);
-      setError(error instanceof Error ? error.message : 'Export failed');
+      
+      let errorMessage = 'Export failed';
+      if (error instanceof Error) {
+        if (error.message.includes('cssRules') || error.message.includes('SecurityError')) {
+          console.log('Font CORS issue detected, attempting fallback export...');
+          errorMessage = 'Font loading issue detected. Trying fallback export method...';
+          
+          // Attempt fallback export without font optimization
+          try {
+            const canvas = document.getElementById('text-canvas');
+            if (canvas) {
+              console.log('Starting fallback export with skipFonts...');
+              const fallbackDataUrl = await toPng(canvas, {
+                backgroundColor: undefined,
+                width: state.canvasSettings.width,
+                height: state.canvasSettings.height,
+                pixelRatio: 1.5, // Reduced pixel ratio for compatibility
+                quality: 0.9,
+                skipFonts: true, // Skip font processing that causes CORS issues
+                style: {
+                  width: `${state.canvasSettings.width}px`,
+                  height: `${state.canvasSettings.height}px`,
+                },
+                filter: (node) => {
+                  if (node.classList?.contains('ignore-export')) return false;
+                  const tagName = node.tagName?.toLowerCase();
+                  return !['script', 'noscript', 'meta', 'title', 'link'].includes(tagName);
+                },
+              });
+
+              const link = document.createElement('a');
+              link.download = `text-image-${Date.now()}.png`;
+              link.href = fallbackDataUrl;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+
+              console.log('Fallback export successful!');
+              setExportStatus('success');
+              setTimeout(() => setExportStatus('idle'), 3000);
+              return;
+            }
+          } catch (fallbackError) {
+            console.error('Fallback export also failed:', fallbackError);
+            errorMessage = 'Export failed. Please try refreshing the page and ensuring fonts are loaded before export.';
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
       setExportStatus('error');
       setTimeout(() => {
         setExportStatus('idle');
         setError(null);
-      }, 5000);
+      }, 8000);
     }
   };
 

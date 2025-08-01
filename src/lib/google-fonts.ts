@@ -170,8 +170,15 @@ class GoogleFontsManager {
         // Check if font is already loaded
         const existingLink = document.querySelector(`link[href="${fontUrl}"]`) as HTMLLinkElement;
         if (existingLink) {
-          this.loadedFonts.add(fontFamily);
-          resolve();
+          // Even if link exists, verify font is actually ready
+          this.verifyFontReady(fontFamily).then(() => {
+            this.loadedFonts.add(fontFamily);
+            resolve();
+          }).catch(() => {
+            // If verification fails, continue with normal loading
+            this.loadedFonts.add(fontFamily);
+            resolve();
+          });
           return;
         }
 
@@ -181,15 +188,22 @@ class GoogleFontsManager {
         link.href = fontUrl;
         
         link.onload = () => {
-          this.loadedFonts.add(fontFamily);
-          
-          // Update cache to mark font as loaded
-          const cacheItem = this.fontsCache.get(fontFamily);
-          if (cacheItem) {
-            cacheItem.loaded = true;
-          }
-          
-          resolve();
+          // Wait for font to be actually ready after CSS loads
+          this.verifyFontReady(fontFamily).then(() => {
+            this.loadedFonts.add(fontFamily);
+            
+            // Update cache to mark font as loaded
+            const cacheItem = this.fontsCache.get(fontFamily);
+            if (cacheItem) {
+              cacheItem.loaded = true;
+            }
+            
+            resolve();
+          }).catch((error) => {
+            console.warn(`Font verification failed for ${fontFamily}, but continuing:`, error);
+            this.loadedFonts.add(fontFamily);
+            resolve();
+          });
         };
         
         link.onerror = () => {
@@ -203,8 +217,84 @@ class GoogleFontsManager {
     });
   }
 
+  private async verifyFontReady(fontFamily: string): Promise<void> {
+    if (typeof window === 'undefined' || !document.fonts) {
+      return Promise.resolve();
+    }
+
+    try {
+      // Use FontFace API to verify font is loaded and ready
+      await document.fonts.load(`16px "${fontFamily}"`);
+      
+      // Additional check: verify font is actually available
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Test if font renders differently than fallback
+      ctx.font = `16px "${fontFamily}", Arial`;
+      const testWidth = ctx.measureText('Test').width;
+      
+      ctx.font = '16px Arial';
+      const fallbackWidth = ctx.measureText('Test').width;
+      
+      // If widths are identical, font might not have loaded
+      if (Math.abs(testWidth - fallbackWidth) < 0.1) {
+        console.warn(`Font ${fontFamily} may not have loaded properly`);
+      }
+    } catch (error) {
+      console.warn(`Font verification failed for ${fontFamily}:`, error);
+      throw error;
+    }
+  }
+
   isFontLoaded(fontFamily: string): boolean {
     return this.loadedFonts.has(fontFamily);
+  }
+
+  async ensureAllFontsReady(fontFamilies: string[]): Promise<void> {
+    if (typeof window === 'undefined' || !document.fonts) {
+      return Promise.resolve();
+    }
+
+    try {
+      // Create promises for all unique fonts
+      const uniqueFonts = [...new Set(fontFamilies)];
+      const fontPromises = uniqueFonts.map(async (fontFamily) => {
+        // Skip system fonts
+        if (this.isSystemFont(fontFamily)) {
+          return;
+        }
+
+        try {
+          // Use document.fonts.load to ensure font is ready
+          await document.fonts.load(`16px "${fontFamily}"`);
+          
+          // Small delay to ensure font is fully rendered
+          await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (error) {
+          console.warn(`Failed to ensure font ready: ${fontFamily}`, error);
+        }
+      });
+
+      await Promise.all(fontPromises);
+      
+      // Additional safety delay for all fonts to be fully ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error) {
+      console.warn('Error ensuring fonts ready:', error);
+    }
+  }
+
+  private isSystemFont(fontFamily: string): boolean {
+    const systemFonts = [
+      'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 
+      'Courier New', 'Verdana', 'Impact', 'Comic Sans MS', 
+      'Trebuchet MS', 'Palatino', 'serif', 'sans-serif', 'monospace'
+    ];
+    return systemFonts.some(font => 
+      fontFamily.toLowerCase().includes(font.toLowerCase())
+    );
   }
 
   getPopularFonts(): GoogleFont[] {

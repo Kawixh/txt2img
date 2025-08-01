@@ -55,7 +55,7 @@ type AppAction =
   | { type: 'SET_FONTS'; payload: { fonts: GoogleFont[] } }
   | { type: 'SET_POPULAR_FONTS'; payload: { fonts: GoogleFont[] } }
   | { type: 'SET_FONTS_LOADING'; payload: { loading: boolean } }
-  | { type: 'SET_FONT_LOADING'; payload: { loading: boolean } }
+  | { type: 'SET_FONT_LOADING'; payload: { loading: boolean; fontFamily?: string } }
   | { type: 'SET_FONTS_ERROR'; payload: { error: string | null } }
   | { type: 'SET_SEARCH_QUERY'; payload: { query: string } }
   | { type: 'SET_SELECTED_CATEGORY'; payload: { category: GoogleFont['category'] | '' } }
@@ -80,6 +80,7 @@ const initialState: AppState = {
     selectedCategory: '',
     isLoading: false,
     isLoadingFont: false,
+    currentlyLoadingFont: null,
     error: null,
     loadedFonts: new Set(),
   },
@@ -206,6 +207,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         fonts: {
           ...state.fonts,
           isLoadingFont: action.payload.loading,
+          currentlyLoadingFont: action.payload.loading ? action.payload.fontFamily || null : null,
         },
       };
     }
@@ -312,7 +314,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     loadFont: async (fontFamily: string, variants?: string[]) => {
-      dispatch({ type: 'SET_FONT_LOADING', payload: { loading: true } });
+      dispatch({ type: 'SET_FONT_LOADING', payload: { loading: true, fontFamily } });
       
       try {
         await googleFontsManager.loadFont(fontFamily, variants);
@@ -326,8 +328,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setFontsLoading: (loading: boolean) => {
       dispatch({ type: 'SET_FONTS_LOADING', payload: { loading } });
     },
-    setFontLoading: (loading: boolean) => {
-      dispatch({ type: 'SET_FONT_LOADING', payload: { loading } });
+    setFontLoading: (loading: boolean, fontFamily?: string) => {
+      dispatch({ type: 'SET_FONT_LOADING', payload: { loading, fontFamily } });
     },
     setFontsError: (error: string | null) => {
       dispatch({ type: 'SET_FONTS_ERROR', payload: { error } });

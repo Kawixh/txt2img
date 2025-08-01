@@ -121,6 +121,7 @@ export interface FontsState {
   selectedCategory: GoogleFont['category'] | '';
   isLoading: boolean;
   isLoadingFont: boolean;
+  currentlyLoadingFont: string | null;
   error: string | null;
   loadedFonts: Set<string>;
 }

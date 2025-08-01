@@ -166,7 +166,12 @@ export function FontControls() {
         <Label className="flex items-center gap-2">
           Font Family
           {state.fonts.isLoadingFont && (
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span className="text-xs text-muted-foreground">
+                Loading {state.fonts.currentlyLoadingFont}...
+              </span>
+            </>
           )}
         </Label>
         <Combobox
@@ -178,6 +183,7 @@ export function FontControls() {
           searchPlaceholder="Type to search fonts..."
           emptyMessage={state.fonts.isLoading ? 'Loading fonts...' : 'No fonts found.'}
           loading={state.fonts.isLoading}
+          disabled={state.fonts.isLoadingFont}
           renderOption={(option) => (
             <div className="flex-1">
               <div 
@@ -192,6 +198,11 @@ export function FontControls() {
             </div>
           )}
         />
+        {state.fonts.isLoadingFont && (
+          <p className="text-sm text-blue-600">
+            Loading font {state.fonts.currentlyLoadingFont}. Please wait...
+          </p>
+        )}
         {state.fonts.error && (
           <p className="text-sm text-amber-600">
             {state.fonts.error.includes('API key') 

@@ -3,7 +3,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { TextElement as TextElementType } from '@/types';
 import { calculateFinalPosition } from '@/lib/positioning';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Loader2 } from 'lucide-react';
 import React, { useRef, useState, useEffect } from 'react';
 
 interface TextElementProps {
@@ -12,10 +12,14 @@ interface TextElementProps {
 }
 
 export function TextElement({ element, isSelected }: TextElementProps) {
-  const { updateTextElement, removeTextElement, selectElement } = useApp();
+  const { updateTextElement, removeTextElement, selectElement, state } = useApp();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
+  
+  // Check if this element's font is currently being loaded
+  const isLoadingFont = state.fonts.isLoadingFont && 
+    state.fonts.currentlyLoadingFont === element.fontFamily;
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -63,7 +67,6 @@ export function TextElement({ element, isSelected }: TextElementProps) {
   };
 
   // Calculate position based on preset and padding
-  const { state } = useApp();
 
   useEffect(() => {
     if (element.positionPreset !== 'manual' && elementRef.current) {
@@ -136,6 +139,8 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     borderRadius: '4px',
     minWidth: '20px',
     minHeight: '20px',
+    opacity: isLoadingFont ? 0.7 : 1,
+    transition: 'opacity 0.2s ease-in-out',
   });
 
   return (
@@ -152,6 +157,21 @@ export function TextElement({ element, isSelected }: TextElementProps) {
       >
         {element.content}
       </div>
+      {isLoadingFont && (
+        <div 
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{
+            left: `${element.x}px`,
+            top: `${element.y}px`,
+            width: `${element.width}px`,
+            minHeight: '20px',
+          }}
+        >
+          <div className="bg-black/20 backdrop-blur-sm rounded-full p-1">
+            <Loader2 className="h-3 w-3 animate-spin text-white" />
+          </div>
+        </div>
+      )}
       {isSelected && (
         <button
           onClick={handleDelete}
