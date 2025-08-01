@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/contexts/AppContext';
 import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
-import { canvasExporter } from '@/lib/canvas-export';
+import { reliableExporter } from '@/lib/reliable-export';
 
 export function ExportButton() {
   const { state, setExportStatus, setError } = useApp();
@@ -13,27 +13,33 @@ export function ExportButton() {
       setExportStatus('loading');
       setError(null);
 
-      console.log('🎨 Starting canvas-based export...');
+      console.log('🎨 Starting reliable html-to-image export...');
       
-      // Use canvas exporter to render text with proper fonts
-      const dataUrl = await canvasExporter.exportToPng(
-        state.textElements,
-        state.canvasSettings
+      // Get unique font families used in text elements
+      const fontFamilies = [...new Set(state.textElements.map(el => el.fontFamily))];
+      console.log('Font families to ensure:', fontFamilies);
+      
+      // Use reliable exporter that handles fonts properly
+      const dataUrl = await reliableExporter.exportElementToPng(
+        'text-canvas',
+        {
+          width: state.canvasSettings.width,
+          height: state.canvasSettings.height,
+          pixelRatio: 2,
+          quality: 1.0
+        },
+        fontFamilies
       );
 
-      console.log('✅ Canvas export completed successfully');
+      console.log('✅ Reliable export completed successfully');
 
-      const link = document.createElement('a');
-      link.download = `text-image-${Date.now()}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Download the image
+      reliableExporter.downloadImage(dataUrl, `text-image-${Date.now()}.png`);
 
       setExportStatus('success');
       setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
-      console.error('Canvas export failed:', error);
+      console.error('Export failed:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Export failed';
       setError(errorMessage);

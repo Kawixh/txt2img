@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useApp } from '@/contexts/AppContext';
 import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
-import { canvasExporter } from '@/lib/canvas-export';
+import { reliableExporter } from '@/lib/reliable-export';
 
 export function ExportControls() {
   const { state, setExportStatus, setError } = useApp();
@@ -15,31 +15,44 @@ export function ExportControls() {
       setError(null);
 
       console.log('🎨 Starting canvas-based export with detailed logging...');
-      console.log('Text elements:', state.textElements);
+      console.log('Text elements to export:', state.textElements.map(el => ({
+        id: el.id,
+        content: el.content,
+        x: el.x,
+        y: el.y,
+        width: el.width,
+        fontSize: el.fontSize,
+        textAlign: el.textAlign,
+        fontFamily: el.fontFamily
+      })));
       console.log('Canvas settings:', state.canvasSettings);
       
-      // Use canvas exporter to render text with proper fonts
-      const dataUrl = await canvasExporter.exportToPng(
-        state.textElements,
-        state.canvasSettings
+      // Get unique font families used in text elements
+      const fontFamilies = [...new Set(state.textElements.map(el => el.fontFamily))];
+      console.log('Font families to ensure:', fontFamilies);
+      
+      // Use reliable exporter that handles fonts properly
+      const dataUrl = await reliableExporter.exportElementToPng(
+        'text-canvas',
+        {
+          width: state.canvasSettings.width,
+          height: state.canvasSettings.height,
+          pixelRatio: 2,
+          quality: 1.0
+        },
+        fontFamilies
       );
 
-      console.log('✅ Canvas export completed successfully');
+      console.log('✅ Reliable export completed successfully');
 
-      // Create and trigger download
-      const link = document.createElement('a');
-      link.download = `text-image-${Date.now()}.png`;
-      link.href = dataUrl;
+      // Download the image
+      reliableExporter.downloadImage(dataUrl, `text-image-${Date.now()}.png`);
 
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      console.log('Canvas export successful!');
+      console.log('HTML-to-image export successful!');
       setExportStatus('success');
       setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
-      console.error('Canvas export failed:', error);
+      console.error('Export failed:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Export failed';
       setError(errorMessage);
