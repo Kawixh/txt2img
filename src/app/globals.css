@@ -44,8 +44,6 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --animate-shine: shine infinite linear;
-  --noise-ink-jet-glass3d: url('https://www.transparenttextures.com/patterns/black-orchid.png');
-  --noise-egg-shell-glass3d: url('https://www.transparenttextures.com/patterns/egg-shell.png');
 
   @keyframes shine {
     from {
@@ -53,6 +51,15 @@
     }
     to {
       background-position: -100%;
+    }
+  }
+
+  @keyframes shimmer-text {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
     }
   }
 }
@@ -91,7 +98,6 @@
   --sidebar-ring: oklch(0.708 0 0);
   --shiny-text-base-color: rgb(181 181 181 / 64%);
   --shiny-text-shine-color: rgba(255, 255, 255, 0.8);
-  --noise-glass3d: var(--noise-egg-shell-glass3d);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
 }
@@ -131,7 +137,6 @@
   --sidebar-ring: oklch(0.556 0 0);
   --shiny-text-base-color: rgba(150, 150, 150, 0.7);
   --shiny-text-shine-color: rgba(250, 250, 250, 0.6);
-  --noise-glass3d: var(--noise-ink-jet-glass3d);
 }
 
 @layer base {
@@ -140,5 +145,34 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  .text-shimmer {
+    background: linear-gradient(
+      110deg,
+      var(--shiny-text-base-color) 25%,
+      var(--shiny-text-shine-color) 50%,
+      var(--shiny-text-base-color) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-text 1.5s ease-in-out infinite;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+  }
+
+  .text-shimmer::before {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    color: var(--shiny-text-base-color);
+    -webkit-text-fill-color: var(--shiny-text-base-color);
+    background: none;
+    animation: none;
   }
 }

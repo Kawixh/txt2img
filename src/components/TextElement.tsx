@@ -3,7 +3,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { TextElement as TextElementType } from '@/types';
 import { calculateFinalPosition } from '@/lib/positioning';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import React, { useRef, useState, useEffect } from 'react';
 
 interface TextElementProps {
@@ -122,7 +122,7 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     fontWeight: element.fontWeight,
     fontStyle: element.fontStyle,
     textDecoration: element.textDecoration,
-    color: element.color,
+    color: isLoadingFont ? 'transparent' : element.color,
     textAlign: element.textAlign as 'left' | 'center' | 'right',
     position: 'absolute' as const,
     left: `${element.x}px`,
@@ -139,8 +139,7 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     borderRadius: '4px',
     minWidth: '20px',
     minHeight: '20px',
-    opacity: isLoadingFont ? 0.7 : 1,
-    transition: 'opacity 0.2s ease-in-out',
+    transition: 'color 0.3s ease-in-out',
   });
 
   return (
@@ -148,6 +147,8 @@ export function TextElement({ element, isSelected }: TextElementProps) {
       <div
         ref={elementRef}
         style={getFontStyle()}
+        className={isLoadingFont ? 'text-shimmer' : ''}
+        data-text={element.content}
         onMouseDown={handleMouseDown}
         onClick={() => selectElement(element.id)}
         contentEditable
@@ -157,21 +158,6 @@ export function TextElement({ element, isSelected }: TextElementProps) {
       >
         {element.content}
       </div>
-      {isLoadingFont && (
-        <div 
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          style={{
-            left: `${element.x}px`,
-            top: `${element.y}px`,
-            width: `${element.width}px`,
-            minHeight: '20px',
-          }}
-        >
-          <div className="bg-black/20 backdrop-blur-sm rounded-full p-1">
-            <Loader2 className="h-3 w-3 animate-spin text-white" />
-          </div>
-        </div>
-      )}
       {isSelected && (
         <button
           onClick={handleDelete}
