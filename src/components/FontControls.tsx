@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
-import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
+import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import {
   Select,
   SelectContent,
@@ -13,19 +11,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Combobox, ComboboxOption } from '@/components/ui/combobox';
+import { Slider } from '@/components/ui/slider';
+import { useApp } from '@/contexts/AppContext';
+import { GoogleFont } from '@/types';
 import {
-  Type,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   Bold,
   Italic,
-  Underline,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
   Loader2,
-  Search,
+  Underline,
 } from 'lucide-react';
-import { GoogleFont } from '@/types';
+import { useEffect, useMemo } from 'react';
 
 const FALLBACK_FONTS = [
   'Arial',
@@ -40,7 +38,10 @@ const FALLBACK_FONTS = [
   'Palatino',
 ];
 
-const FONT_CATEGORIES: Array<{ value: GoogleFont['category'] | 'all'; label: string }> = [
+const FONT_CATEGORIES: Array<{
+  value: GoogleFont['category'] | 'all';
+  label: string;
+}> = [
   { value: 'all', label: 'All Categories' },
   { value: 'sans-serif', label: 'Sans Serif' },
   { value: 'serif', label: 'Serif' },
@@ -50,8 +51,8 @@ const FONT_CATEGORIES: Array<{ value: GoogleFont['category'] | 'all'; label: str
 ];
 
 export function FontControls() {
-  const { 
-    state, 
+  const {
+    state,
     updateTextElement,
     fetchFonts,
     loadFont,
@@ -74,9 +75,9 @@ export function FontControls() {
   // Prepare font options for the combobox
   const fontOptions: ComboboxOption[] = useMemo(() => {
     const googleFonts = getFilteredFonts();
-    
+
     // Always include fallback fonts, with Google Fonts first if available
-    const fallbackOptions = FALLBACK_FONTS.map(font => ({
+    const fallbackOptions = FALLBACK_FONTS.map((font) => ({
       value: font,
       label: font,
       category: 'system' as const,
@@ -86,7 +87,7 @@ export function FontControls() {
       return fallbackOptions;
     }
 
-    const googleFontOptions = googleFonts.map(font => ({
+    const googleFontOptions = googleFonts.map((font) => ({
       value: font.family,
       label: font.family,
       category: font.category,
@@ -95,8 +96,9 @@ export function FontControls() {
 
     // Combine Google Fonts with fallback fonts, removing duplicates
     const allOptions = [...googleFontOptions, ...fallbackOptions];
-    const uniqueOptions = allOptions.filter((option, index, self) => 
-      index === self.findIndex(o => o.value === option.value)
+    const uniqueOptions = allOptions.filter(
+      (option, index, self) =>
+        index === self.findIndex((o) => o.value === option.value),
     );
 
     return uniqueOptions;
@@ -109,7 +111,7 @@ export function FontControls() {
     updateTextElement(selectedElement.id, { fontFamily });
 
     // Load the font if it's a Google Font
-    const isGoogleFont = state.fonts.fonts.some(f => f.family === fontFamily);
+    const isGoogleFont = state.fonts.fonts.some((f) => f.family === fontFamily);
     if (isGoogleFont && !state.fonts.loadedFonts.has(fontFamily)) {
       try {
         await loadFont(fontFamily);
@@ -168,7 +170,7 @@ export function FontControls() {
           {state.fonts.isLoadingFont && (
             <>
               <Loader2 className="h-3 w-3 animate-spin" />
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 Loading {state.fonts.currentlyLoadingFont}...
               </span>
             </>
@@ -181,18 +183,15 @@ export function FontControls() {
           onSearch={handleFontSearch}
           placeholder="Search fonts..."
           searchPlaceholder="Type to search fonts..."
-          emptyMessage={state.fonts.isLoading ? 'Loading fonts...' : 'No fonts found.'}
+          emptyMessage={
+            state.fonts.isLoading ? 'Loading fonts...' : 'No fonts found.'
+          }
           loading={state.fonts.isLoading}
           disabled={state.fonts.isLoadingFont}
           renderOption={(option) => (
             <div className="flex-1">
-              <div 
-                className="font-medium" 
-                style={{ fontFamily: option.preview || option.label }}
-              >
-                {option.label}
-              </div>
-              <div className="text-xs text-muted-foreground capitalize">
+              <div className="font-medium">{option.label}</div>
+              <div className="text-muted-foreground text-xs capitalize">
                 {option.category}
               </div>
             </div>
@@ -205,17 +204,18 @@ export function FontControls() {
         )}
         {state.fonts.error && (
           <p className="text-sm text-amber-600">
-            {state.fonts.error.includes('API key') 
-              ? 'Using system fonts. Configure Google Fonts API key for more options.' 
-              : state.fonts.error
-            }
+            {state.fonts.error.includes('API key')
+              ? 'Using system fonts. Configure Google Fonts API key for more options.'
+              : state.fonts.error}
           </p>
         )}
-        {state.fonts.fonts.length === 0 && !state.fonts.isLoading && !state.fonts.error && (
-          <p className="text-sm text-gray-500">
-            Using system fonts. Add Google Fonts API key for more options.
-          </p>
-        )}
+        {state.fonts.fonts.length === 0 &&
+          !state.fonts.isLoading &&
+          !state.fonts.error && (
+            <p className="text-sm text-gray-500">
+              Using system fonts. Add Google Fonts API key for more options.
+            </p>
+          )}
       </div>
 
       {/* Font Size */}
@@ -259,9 +259,7 @@ export function FontControls() {
             onClick={() =>
               updateSelectedElement({
                 fontStyle:
-                  selectedElement.fontStyle === 'italic'
-                    ? 'normal'
-                    : 'italic',
+                  selectedElement.fontStyle === 'italic' ? 'normal' : 'italic',
               })
             }
           >

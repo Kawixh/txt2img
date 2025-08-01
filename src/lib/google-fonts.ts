@@ -286,7 +286,7 @@ class GoogleFontsManager {
     }
   }
 
-  private isSystemFont(fontFamily: string): boolean {
+  isSystemFont(fontFamily: string): boolean {
     const systemFonts = [
       'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 
       'Courier New', 'Verdana', 'Impact', 'Comic Sans MS', 
@@ -299,6 +299,37 @@ class GoogleFontsManager {
 
   getPopularFonts(): GoogleFont[] {
     return this.popularFonts;
+  }
+
+  /**
+   * Gets font weights for text elements to optimize embedding
+   */
+  extractFontWeights(textElements: any[]): Map<string, string[]> {
+    const fontWeightsMap = new Map<string, string[]>();
+    
+    textElements.forEach(element => {
+      const fontFamily = element.fontFamily;
+      const fontWeight = element.fontWeight?.toString() || '400';
+      
+      if (!fontWeightsMap.has(fontFamily)) {
+        fontWeightsMap.set(fontFamily, []);
+      }
+      
+      const weights = fontWeightsMap.get(fontFamily)!;
+      if (!weights.includes(fontWeight)) {
+        weights.push(fontWeight);
+      }
+    });
+    
+    return fontWeightsMap;
+  }
+
+  /**
+   * Gets all font families currently used in text elements
+   */
+  getUsedFontFamilies(textElements: any[]): string[] {
+    return [...new Set(textElements.map(element => element.fontFamily))]
+      .filter(font => !this.isSystemFont(font));
   }
 
   searchFonts(fonts: GoogleFont[], query: string): GoogleFont[] {
