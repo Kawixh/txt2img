@@ -12,13 +12,15 @@ interface TextElementProps {
 }
 
 export function TextElement({ element, isSelected }: TextElementProps) {
-  const { updateTextElement, removeTextElement, selectElement, state } = useApp();
+  const { updateTextElement, removeTextElement, selectElement, state } =
+    useApp();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
-  
+
   // Check if this element's font is currently being loaded
-  const isLoadingFont = state.fonts.isLoadingFont && 
+  const isLoadingFont =
+    state.fonts.isLoadingFont &&
     state.fonts.currentlyLoadingFont === element.fontFamily;
 
   const handleMouseDown = (e: React.MouseEvent) => {

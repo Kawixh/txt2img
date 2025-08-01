@@ -13,7 +13,7 @@ class CanvasExporter {
     if (typeof window === 'undefined') {
       throw new Error('Canvas export is only available in the browser');
     }
-    
+
     if (!this.canvas) {
       this.canvas = document.createElement('canvas');
       const ctx = this.canvas.getContext('2d');
@@ -29,11 +29,11 @@ class CanvasExporter {
    */
   async exportToPng(
     textElements: TextElement[],
-    canvasSettings: CanvasSettings
+    canvasSettings: CanvasSettings,
   ): Promise<string> {
     // Initialize canvas if needed
     this.initializeCanvas();
-    
+
     if (!this.canvas || !this.ctx) {
       throw new Error('Canvas initialization failed');
     }
@@ -67,7 +67,9 @@ class CanvasExporter {
     if (!this.ctx || !this.canvas) return;
 
     console.log('Rendering background:', background);
-    console.log(`Canvas dimensions: ${this.canvas.width}x${this.canvas.height}`);
+    console.log(
+      `Canvas dimensions: ${this.canvas.width}x${this.canvas.height}`,
+    );
 
     switch (background.type) {
       case 'solid':
@@ -76,23 +78,23 @@ class CanvasExporter {
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         console.log('Solid background rendered');
         break;
-      
+
       case 'gradient':
         console.log('Rendering gradient background');
         await this.renderGradientBackground(background);
         console.log('Gradient background rendered');
         break;
-      
+
       case 'pattern':
         console.log('Rendering pattern background');
         await this.renderPatternBackground(background);
         console.log('Pattern background rendered');
         break;
-      
+
       case 'transparent':
         console.log('Rendering transparent background (no fill)');
         break;
-        
+
       default:
         console.log(`Unknown background type: ${(background as any).type}`);
         break;
@@ -102,7 +104,9 @@ class CanvasExporter {
   /**
    * Renders gradient background
    */
-  private async renderGradientBackground(gradient: BackgroundConfig & { type: 'gradient' }): Promise<void> {
+  private async renderGradientBackground(
+    gradient: BackgroundConfig & { type: 'gradient' },
+  ): Promise<void> {
     if (!this.ctx || !this.canvas) return;
 
     let canvasGradient: CanvasGradient;
@@ -111,11 +115,14 @@ class CanvasExporter {
       direction: gradient.direction,
       from: gradient.from,
       to: gradient.to,
-      via: gradient.via
+      via: gradient.via,
     });
 
     // Map gradient directions to canvas coordinates
-    const directionMap: Record<string, { x1: number; y1: number; x2: number; y2: number }> = {
+    const directionMap: Record<
+      string,
+      { x1: number; y1: number; x2: number; y2: number }
+    > = {
       'to-r': { x1: 0, y1: 0, x2: this.canvas.width, y2: 0 },
       'to-l': { x1: this.canvas.width, y1: 0, x2: 0, y2: 0 },
       'to-b': { x1: 0, y1: 0, x2: 0, y2: this.canvas.height },
@@ -128,8 +135,13 @@ class CanvasExporter {
 
     const coords = directionMap[gradient.direction] || directionMap['to-r'];
     console.log(`Using gradient coordinates:`, coords);
-    
-    canvasGradient = this.ctx.createLinearGradient(coords.x1, coords.y1, coords.x2, coords.y2);
+
+    canvasGradient = this.ctx.createLinearGradient(
+      coords.x1,
+      coords.y1,
+      coords.x2,
+      coords.y2,
+    );
 
     // Add color stops
     console.log(`Adding color stops: 0=${gradient.from}, 1=${gradient.to}`);
@@ -148,9 +160,11 @@ class CanvasExporter {
   /**
    * Renders pattern background (simplified for now)
    */
-  private async renderPatternBackground(pattern: BackgroundConfig & { type: 'pattern' }): Promise<void> {
+  private async renderPatternBackground(
+    pattern: BackgroundConfig & { type: 'pattern' },
+  ): Promise<void> {
     if (!this.ctx || !this.canvas) return;
-    
+
     // For now, render pattern as solid background color
     // TODO: Implement actual pattern rendering if needed
     this.ctx.fillStyle = pattern.backgroundColor;
@@ -161,8 +175,8 @@ class CanvasExporter {
    * Ensures all fonts used in text elements are loaded
    */
   private async ensureFontsLoaded(textElements: TextElement[]): Promise<void> {
-    const fontFamilies = [...new Set(textElements.map(el => el.fontFamily))];
-    
+    const fontFamilies = [...new Set(textElements.map((el) => el.fontFamily))];
+
     for (const fontFamily of fontFamilies) {
       try {
         // Load font with document.fonts API
@@ -174,7 +188,7 @@ class CanvasExporter {
     }
 
     // Additional wait for font rendering stability
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   /**
@@ -182,7 +196,7 @@ class CanvasExporter {
    */
   private async renderTextElement(element: TextElement): Promise<void> {
     if (!this.ctx || !this.canvas) return;
-    
+
     this.ctx.save();
 
     // Set font properties FIRST (needed for accurate text measurement in wrapText)
@@ -190,9 +204,9 @@ class CanvasExporter {
     const fontStyle = element.fontStyle === 'italic' ? 'italic' : 'normal';
     const fontString = `${fontStyle} ${fontWeight} ${element.fontSize}px "${element.fontFamily}", Arial, sans-serif`;
     this.ctx.font = fontString;
-    
+
     console.log(`Font set for text measurement: ${fontString}`);
-    
+
     // Set text color
     this.ctx.fillStyle = element.color;
 
@@ -201,7 +215,11 @@ class CanvasExporter {
     this.ctx.textAlign = 'left'; // Always use left, handle alignment manually
 
     // Handle word wrapping and multi-line text (font is now set correctly)
-    const lines = this.wrapText(element.content, element.width, element.wordWrap);
+    const lines = this.wrapText(
+      element.content,
+      element.width,
+      element.wordWrap,
+    );
     console.log(`Text wrapped into ${lines.length} lines:`, lines);
     const lineHeight = element.fontSize * 1.2; // Standard line height
 
@@ -219,16 +237,16 @@ class CanvasExporter {
       finalY: startY,
       width: element.width,
       fontSize: element.fontSize,
-      textAlign: element.textAlign
+      textAlign: element.textAlign,
     });
 
     // Render each line
     lines.forEach((line, index) => {
-      const y = startY + (index * lineHeight);
+      const y = startY + index * lineHeight;
       let x = startX;
 
       // Apply text alignment within the element width (match DOM behavior)
-      const availableWidth = element.width - (domPadding * 2);
+      const availableWidth = element.width - domPadding * 2;
       if (element.textAlign === 'center') {
         const textWidth = this.ctx.measureText(line).width;
         x = startX + (availableWidth - textWidth) / 2;
@@ -252,20 +270,26 @@ class CanvasExporter {
   /**
    * Wraps text to fit within specified width (accounting for DOM padding)
    */
-  private wrapText(text: string, maxWidth: number, wordWrap: boolean): string[] {
+  private wrapText(
+    text: string,
+    maxWidth: number,
+    wordWrap: boolean,
+  ): string[] {
     if (!this.ctx || !wordWrap) {
       console.log(`No wrapping: wordWrap=${wordWrap}, returning split lines`);
       return text.split('\n');
     }
 
     // Account for DOM padding (4px on each side)
-    const availableWidth = maxWidth - (4 * 2);
-    console.log(`Word wrapping: maxWidth=${maxWidth}, availableWidth=${availableWidth}`);
+    const availableWidth = maxWidth - 4 * 2;
+    console.log(
+      `Word wrapping: maxWidth=${maxWidth}, availableWidth=${availableWidth}`,
+    );
 
     const lines: string[] = [];
     const paragraphs = text.split('\n');
 
-    paragraphs.forEach(paragraph => {
+    paragraphs.forEach((paragraph) => {
       if (paragraph.trim() === '') {
         lines.push('');
         return;
@@ -274,14 +298,18 @@ class CanvasExporter {
       const words = paragraph.split(' ');
       let currentLine = '';
 
-      words.forEach(word => {
+      words.forEach((word) => {
         const testLine = currentLine + (currentLine ? ' ' : '') + word;
         const metrics = this.ctx!.measureText(testLine);
-        
-        console.log(`Testing line "${testLine}": width=${metrics.width}, availableWidth=${availableWidth}`);
-        
+
+        console.log(
+          `Testing line "${testLine}": width=${metrics.width}, availableWidth=${availableWidth}`,
+        );
+
         if (metrics.width > availableWidth && currentLine !== '') {
-          console.log(`Line too wide, wrapping. Current line: "${currentLine}"`);
+          console.log(
+            `Line too wide, wrapping. Current line: "${currentLine}"`,
+          );
           lines.push(currentLine);
           currentLine = word;
         } else {
@@ -302,9 +330,14 @@ class CanvasExporter {
   /**
    * Renders underline decoration
    */
-  private renderUnderline(text: string, x: number, y: number, fontSize: number): void {
+  private renderUnderline(
+    text: string,
+    x: number,
+    y: number,
+    fontSize: number,
+  ): void {
     if (!this.ctx) return;
-    
+
     const textWidth = this.ctx.measureText(text).width;
     const underlineY = y + 2; // Slight offset below text
     const underlineHeight = Math.max(1, fontSize / 12); // Scale underline thickness
@@ -323,7 +356,7 @@ class CanvasExporter {
     }
     return {
       width: this.canvas.width,
-      height: this.canvas.height
+      height: this.canvas.height,
     };
   }
 
@@ -341,11 +374,11 @@ class CanvasExporter {
 export function hexToRgba(hex: string, alpha: number = 1): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return hex;
-  
+
   const r = parseInt(result[1], 16);
   const g = parseInt(result[2], 16);
   const b = parseInt(result[3], 16);
-  
+
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 

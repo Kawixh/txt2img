@@ -6,7 +6,7 @@ import { AppProvider } from '@/contexts/AppContext';
 export default function Home() {
   return (
     <AppProvider>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex min-h-screen flex-col bg-gray-50">
         {/* Top Navigation Bar */}
         <header className="border-b bg-white shadow-sm">
           <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
@@ -26,7 +26,7 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="flex-1 flex">
+        <div className="flex flex-1">
           {/* Controls Panel */}
           <div className="w-80 border-r bg-white shadow-sm">
             <ControlTabs />
@@ -52,7 +52,9 @@ export default function Home() {
         {/* Footer */}
         <footer className="border-t bg-white py-4">
           <div className="mx-auto max-w-7xl px-4 text-center text-gray-600 sm:px-6 lg:px-8">
-            <p className="text-sm">Built with Next.js, React, and Tailwind CSS</p>
+            <p className="text-sm">
+              Built with Next.js, React, and Tailwind CSS
+            </p>
           </div>
         </footer>
       </div>

@@ -58,7 +58,7 @@ export function ControlTabs() {
             variant={activeTab === tab.id ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setActiveTab(tab.id)}
-            className="flex flex-col gap-1 h-16 text-xs"
+            className="flex h-16 flex-col gap-1 text-xs"
           >
             {tab.icon}
             <span className="hidden sm:block">{tab.label}</span>
@@ -67,7 +67,7 @@ export function ControlTabs() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 p-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
+      <div className="max-h-[calc(100vh-12rem)] flex-1 overflow-y-auto p-4">
         <Card className="border-0 shadow-none">
           <CardContent className="p-0">
             {tabs.find((tab) => tab.id === activeTab)?.component}

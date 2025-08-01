@@ -42,224 +42,224 @@ export function PositionControls() {
 
   return (
     <div className="space-y-6">
-        {/* Text Box Width */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>Width: {selectedElement.width}px</Label>
-            <Input
-              type="number"
-              value={selectedElement.width}
-              onChange={(e) =>
-                updateSelectedElement({
-                  width: parseInt(e.target.value) || 100,
-                })
-              }
-              className="h-8 w-20 text-xs"
-              min={50}
-              max={800}
-            />
-          </div>
-          <Slider
-            value={[selectedElement.width]}
-            onValueChange={([value]) => updateSelectedElement({ width: value })}
+      {/* Text Box Width */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label>Width: {selectedElement.width}px</Label>
+          <Input
+            type="number"
+            value={selectedElement.width}
+            onChange={(e) =>
+              updateSelectedElement({
+                width: parseInt(e.target.value) || 100,
+              })
+            }
+            className="h-8 w-20 text-xs"
             min={50}
             max={800}
-            step={10}
-            className="w-full"
           />
         </div>
+        <Slider
+          value={[selectedElement.width]}
+          onValueChange={([value]) => updateSelectedElement({ width: value })}
+          min={50}
+          max={800}
+          step={10}
+          className="w-full"
+        />
+      </div>
 
-        {/* Word Wrap Toggle */}
+      {/* Word Wrap Toggle */}
+      <div className="space-y-2">
+        <Label>Word Wrap</Label>
+        <Button
+          variant={selectedElement.wordWrap ? 'default' : 'outline'}
+          size="sm"
+          onClick={() =>
+            updateSelectedElement({ wordWrap: !selectedElement.wordWrap })
+          }
+          className="flex w-full items-center gap-2"
+        >
+          {selectedElement.wordWrap ? (
+            <ToggleRight size={16} />
+          ) : (
+            <ToggleLeft size={16} />
+          )}
+          {selectedElement.wordWrap ? 'Enabled' : 'Disabled'}
+        </Button>
+      </div>
+
+      {/* Position Presets */}
+      <div className="space-y-2">
+        <Label>Position Preset</Label>
         <div className="space-y-2">
-          <Label>Word Wrap</Label>
+          {/* Manual Mode Toggle */}
           <Button
-            variant={selectedElement.wordWrap ? 'default' : 'outline'}
-            size="sm"
-            onClick={() =>
-              updateSelectedElement({ wordWrap: !selectedElement.wordWrap })
+            variant={
+              selectedElement.positionPreset === 'manual'
+                ? 'default'
+                : 'outline'
             }
-            className="flex w-full items-center gap-2"
+            size="sm"
+            onClick={() => handlePresetChange('manual')}
+            className="w-full"
           >
-            {selectedElement.wordWrap ? (
-              <ToggleRight size={16} />
-            ) : (
-              <ToggleLeft size={16} />
-            )}
-            {selectedElement.wordWrap ? 'Enabled' : 'Disabled'}
+            Manual Positioning
           </Button>
-        </div>
 
-        {/* Position Presets */}
-        <div className="space-y-2">
-          <Label>Position Preset</Label>
+          {/* Position Grid */}
+          <div className="grid grid-cols-3 gap-1 rounded-lg border bg-gray-50 p-2">
+            {presetGrid.map((row) =>
+              row.map((preset) => (
+                <Button
+                  key={preset.id}
+                  variant={
+                    selectedElement.positionPreset === preset.id
+                      ? 'default'
+                      : 'outline'
+                  }
+                  size="sm"
+                  onClick={() => handlePresetChange(preset.id)}
+                  className="aspect-square p-1 text-lg"
+                  title={preset.description}
+                >
+                  {preset.icon}
+                </Button>
+              )),
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Padding Controls - Only show when not in manual mode */}
+      {selectedElement.positionPreset !== 'manual' && (
+        <div className="space-y-4">
+          <Label className="text-sm font-medium">Fine-tune Position</Label>
+
+          {/* Horizontal Padding */}
           <div className="space-y-2">
-            {/* Manual Mode Toggle */}
-            <Button
-              variant={
-                selectedElement.positionPreset === 'manual'
-                  ? 'default'
-                  : 'outline'
-              }
-              size="sm"
-              onClick={() => handlePresetChange('manual')}
-              className="w-full"
-            >
-              Manual Positioning
-            </Button>
-
-            {/* Position Grid */}
-            <div className="grid grid-cols-3 gap-1 rounded-lg border bg-gray-50 p-2">
-              {presetGrid.map((row) =>
-                row.map((preset) => (
-                  <Button
-                    key={preset.id}
-                    variant={
-                      selectedElement.positionPreset === preset.id
-                        ? 'default'
-                        : 'outline'
-                    }
-                    size="sm"
-                    onClick={() => handlePresetChange(preset.id)}
-                    className="aspect-square p-1 text-lg"
-                    title={preset.description}
-                  >
-                    {preset.icon}
-                  </Button>
-                )),
-              )}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                Horizontal Offset: {selectedElement.paddingX}px
+              </Label>
+              <Input
+                type="number"
+                value={selectedElement.paddingX}
+                onChange={(e) =>
+                  updateSelectedElement({
+                    paddingX: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="h-6 w-16 text-xs"
+                min={-200}
+                max={200}
+              />
             </div>
+            <Slider
+              value={[selectedElement.paddingX]}
+              onValueChange={([value]) =>
+                updateSelectedElement({ paddingX: value })
+              }
+              min={-200}
+              max={200}
+              step={5}
+              className="w-full"
+            />
+          </div>
+
+          {/* Vertical Padding */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                Vertical Offset: {selectedElement.paddingY}px
+              </Label>
+              <Input
+                type="number"
+                value={selectedElement.paddingY}
+                onChange={(e) =>
+                  updateSelectedElement({
+                    paddingY: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="h-6 w-16 text-xs"
+                min={-200}
+                max={200}
+              />
+            </div>
+            <Slider
+              value={[selectedElement.paddingY]}
+              onValueChange={([value]) =>
+                updateSelectedElement({ paddingY: value })
+              }
+              min={-200}
+              max={200}
+              step={5}
+              className="w-full"
+            />
           </div>
         </div>
+      )}
 
-        {/* Padding Controls - Only show when not in manual mode */}
-        {selectedElement.positionPreset !== 'manual' && (
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Fine-tune Position</Label>
+      {/* Manual Position Controls - Only show in manual mode */}
+      {selectedElement.positionPreset === 'manual' && (
+        <div className="space-y-4">
+          <Label className="text-sm font-medium">Manual Position</Label>
 
-            {/* Horizontal Padding */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">
-                  Horizontal Offset: {selectedElement.paddingX}px
-                </Label>
-                <Input
-                  type="number"
-                  value={selectedElement.paddingX}
-                  onChange={(e) =>
-                    updateSelectedElement({
-                      paddingX: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="h-6 w-16 text-xs"
-                  min={-200}
-                  max={200}
-                />
-              </div>
-              <Slider
-                value={[selectedElement.paddingX]}
-                onValueChange={([value]) =>
-                  updateSelectedElement({ paddingX: value })
+          {/* X Position */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                X Position: {selectedElement.x}px
+              </Label>
+              <Input
+                type="number"
+                value={selectedElement.x}
+                onChange={(e) =>
+                  updateSelectedElement({ x: parseInt(e.target.value) || 0 })
                 }
-                min={-200}
-                max={200}
-                step={5}
-                className="w-full"
-              />
-            </div>
-
-            {/* Vertical Padding */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">
-                  Vertical Offset: {selectedElement.paddingY}px
-                </Label>
-                <Input
-                  type="number"
-                  value={selectedElement.paddingY}
-                  onChange={(e) =>
-                    updateSelectedElement({
-                      paddingY: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="h-6 w-16 text-xs"
-                  min={-200}
-                  max={200}
-                />
-              </div>
-              <Slider
-                value={[selectedElement.paddingY]}
-                onValueChange={([value]) =>
-                  updateSelectedElement({ paddingY: value })
-                }
-                min={-200}
-                max={200}
-                step={5}
-                className="w-full"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Manual Position Controls - Only show in manual mode */}
-        {selectedElement.positionPreset === 'manual' && (
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Manual Position</Label>
-
-            {/* X Position */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">
-                  X Position: {selectedElement.x}px
-                </Label>
-                <Input
-                  type="number"
-                  value={selectedElement.x}
-                  onChange={(e) =>
-                    updateSelectedElement({ x: parseInt(e.target.value) || 0 })
-                  }
-                  className="h-6 w-16 text-xs"
-                  min={0}
-                  max={state.canvasSettings.width}
-                />
-              </div>
-              <Slider
-                value={[selectedElement.x]}
-                onValueChange={([value]) => updateSelectedElement({ x: value })}
+                className="h-6 w-16 text-xs"
                 min={0}
                 max={state.canvasSettings.width}
-                step={5}
-                className="w-full"
               />
             </div>
+            <Slider
+              value={[selectedElement.x]}
+              onValueChange={([value]) => updateSelectedElement({ x: value })}
+              min={0}
+              max={state.canvasSettings.width}
+              step={5}
+              className="w-full"
+            />
+          </div>
 
-            {/* Y Position */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">
-                  Y Position: {selectedElement.y}px
-                </Label>
-                <Input
-                  type="number"
-                  value={selectedElement.y}
-                  onChange={(e) =>
-                    updateSelectedElement({ y: parseInt(e.target.value) || 0 })
-                  }
-                  className="h-6 w-16 text-xs"
-                  min={0}
-                  max={state.canvasSettings.height}
-                />
-              </div>
-              <Slider
-                value={[selectedElement.y]}
-                onValueChange={([value]) => updateSelectedElement({ y: value })}
+          {/* Y Position */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                Y Position: {selectedElement.y}px
+              </Label>
+              <Input
+                type="number"
+                value={selectedElement.y}
+                onChange={(e) =>
+                  updateSelectedElement({ y: parseInt(e.target.value) || 0 })
+                }
+                className="h-6 w-16 text-xs"
                 min={0}
                 max={state.canvasSettings.height}
-                step={5}
-                className="w-full"
               />
             </div>
+            <Slider
+              value={[selectedElement.y]}
+              onValueChange={([value]) => updateSelectedElement({ y: value })}
+              min={0}
+              max={state.canvasSettings.height}
+              step={5}
+              className="w-full"
+            />
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }

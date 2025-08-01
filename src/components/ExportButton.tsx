@@ -14,11 +14,13 @@ export function ExportButton() {
       setError(null);
 
       console.log('🎨 Starting reliable html-to-image export...');
-      
+
       // Get unique font families used in text elements
-      const fontFamilies = [...new Set(state.textElements.map(el => el.fontFamily))];
+      const fontFamilies = [
+        ...new Set(state.textElements.map((el) => el.fontFamily)),
+      ];
       console.log('Font families to ensure:', fontFamilies);
-      
+
       // Use reliable exporter that handles fonts properly
       const dataUrl = await reliableExporter.exportElementToPng(
         'text-canvas',
@@ -26,9 +28,9 @@ export function ExportButton() {
           width: state.canvasSettings.width,
           height: state.canvasSettings.height,
           pixelRatio: 2,
-          quality: 1.0
+          quality: 1.0,
         },
-        fontFamilies
+        fontFamilies,
       );
 
       console.log('✅ Reliable export completed successfully');
@@ -40,8 +42,9 @@ export function ExportButton() {
       setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
       console.error('Export failed:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Export failed';
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Export failed';
       setError(errorMessage);
       setExportStatus('error');
       setTimeout(() => {

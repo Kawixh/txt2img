@@ -55,10 +55,16 @@ type AppAction =
   | { type: 'SET_FONTS'; payload: { fonts: GoogleFont[] } }
   | { type: 'SET_POPULAR_FONTS'; payload: { fonts: GoogleFont[] } }
   | { type: 'SET_FONTS_LOADING'; payload: { loading: boolean } }
-  | { type: 'SET_FONT_LOADING'; payload: { loading: boolean; fontFamily?: string } }
+  | {
+      type: 'SET_FONT_LOADING';
+      payload: { loading: boolean; fontFamily?: string };
+    }
   | { type: 'SET_FONTS_ERROR'; payload: { error: string | null } }
   | { type: 'SET_SEARCH_QUERY'; payload: { query: string } }
-  | { type: 'SET_SELECTED_CATEGORY'; payload: { category: GoogleFont['category'] | '' } }
+  | {
+      type: 'SET_SELECTED_CATEGORY';
+      payload: { category: GoogleFont['category'] | '' };
+    }
   | { type: 'ADD_LOADED_FONT'; payload: { fontFamily: string } };
 
 const initialState: AppState = {
@@ -207,7 +213,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
         fonts: {
           ...state.fonts,
           isLoadingFont: action.payload.loading,
-          currentlyLoadingFont: action.payload.loading ? action.payload.fontFamily || null : null,
+          currentlyLoadingFont: action.payload.loading
+            ? action.payload.fontFamily || null
+            : null,
         },
       };
     }
@@ -292,21 +300,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     fetchFonts: async (options?: FontSearchOptions) => {
       dispatch({ type: 'SET_FONTS_LOADING', payload: { loading: true } });
       dispatch({ type: 'SET_FONTS_ERROR', payload: { error: null } });
-      
+
       try {
         const fonts = await googleFontsManager.fetchFonts(options);
         dispatch({ type: 'SET_FONTS', payload: { fonts } });
-        
+
         if (options?.sort === 'popularity' || !options) {
-          dispatch({ type: 'SET_POPULAR_FONTS', payload: { fonts: fonts.slice(0, 50) } });
+          dispatch({
+            type: 'SET_POPULAR_FONTS',
+            payload: { fonts: fonts.slice(0, 50) },
+          });
         }
-        
+
         // If no fonts were fetched (API not configured), don't set an error
         if (fonts.length === 0) {
-          console.warn('No Google Fonts available, using fallback system fonts');
+          console.warn(
+            'No Google Fonts available, using fallback system fonts',
+          );
         }
       } catch (error) {
-        console.warn('Google Fonts API error, falling back to system fonts:', error);
+        console.warn(
+          'Google Fonts API error, falling back to system fonts:',
+          error,
+        );
         // Don't set an error state for API configuration issues
         dispatch({ type: 'SET_FONTS', payload: { fonts: [] } });
       } finally {
@@ -314,8 +330,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     loadFont: async (fontFamily: string, variants?: string[]) => {
-      dispatch({ type: 'SET_FONT_LOADING', payload: { loading: true, fontFamily } });
-      
+      dispatch({
+        type: 'SET_FONT_LOADING',
+        payload: { loading: true, fontFamily },
+      });
+
       try {
         await googleFontsManager.loadFont(fontFamily, variants);
         dispatch({ type: 'ADD_LOADED_FONT', payload: { fontFamily } });
@@ -342,17 +361,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     getFilteredFonts: () => {
       let fonts = state.fonts.fonts;
-      
+
       // Filter by category
       if (state.fonts.selectedCategory) {
-        fonts = googleFontsManager.filterFontsByCategory(fonts, state.fonts.selectedCategory);
+        fonts = googleFontsManager.filterFontsByCategory(
+          fonts,
+          state.fonts.selectedCategory,
+        );
       }
-      
+
       // Filter by search query
       if (state.fonts.searchQuery) {
         fonts = googleFontsManager.searchFonts(fonts, state.fonts.searchQuery);
       }
-      
+
       return fonts;
     },
   };

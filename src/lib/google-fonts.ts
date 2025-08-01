@@ -77,7 +77,7 @@ class GoogleFontsManager {
 
   async fetchFonts(options: FontSearchOptions = {}): Promise<GoogleFont[]> {
     const cacheKey = `${FONT_SEARCH_CACHE_KEY}-${JSON.stringify(options)}`;
-    
+
     // Check cache first
     const cached = this.getCachedFonts(cacheKey);
     if (cached) {
@@ -125,7 +125,7 @@ class GoogleFontsManager {
   private getCachedFonts(cacheKey: string): GoogleFont[] | null {
     try {
       if (typeof window === 'undefined') return null;
-      
+
       const cached = localStorage.getItem(cacheKey);
       if (!cached) return null;
 
@@ -145,7 +145,7 @@ class GoogleFontsManager {
   private cacheFonts(cacheKey: string, fonts: GoogleFont[]) {
     try {
       if (typeof window === 'undefined') return;
-      
+
       const cacheData = {
         fonts,
         timestamp: Date.now(),
@@ -156,7 +156,10 @@ class GoogleFontsManager {
     }
   }
 
-  async loadFont(fontFamily: string, variants: string[] = ['400']): Promise<void> {
+  async loadFont(
+    fontFamily: string,
+    variants: string[] = ['400'],
+  ): Promise<void> {
     if (this.loadedFonts.has(fontFamily)) {
       return;
     }
@@ -168,17 +171,21 @@ class GoogleFontsManager {
         const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@${variantsString}&display=swap`;
 
         // Check if font is already loaded
-        const existingLink = document.querySelector(`link[href="${fontUrl}"]`) as HTMLLinkElement;
+        const existingLink = document.querySelector(
+          `link[href="${fontUrl}"]`,
+        ) as HTMLLinkElement;
         if (existingLink) {
           // Even if link exists, verify font is actually ready
-          this.verifyFontReady(fontFamily).then(() => {
-            this.loadedFonts.add(fontFamily);
-            resolve();
-          }).catch(() => {
-            // If verification fails, continue with normal loading
-            this.loadedFonts.add(fontFamily);
-            resolve();
-          });
+          this.verifyFontReady(fontFamily)
+            .then(() => {
+              this.loadedFonts.add(fontFamily);
+              resolve();
+            })
+            .catch(() => {
+              // If verification fails, continue with normal loading
+              this.loadedFonts.add(fontFamily);
+              resolve();
+            });
           return;
         }
 
@@ -186,26 +193,31 @@ class GoogleFontsManager {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = fontUrl;
-        
+
         link.onload = () => {
           // Wait for font to be actually ready after CSS loads
-          this.verifyFontReady(fontFamily).then(() => {
-            this.loadedFonts.add(fontFamily);
-            
-            // Update cache to mark font as loaded
-            const cacheItem = this.fontsCache.get(fontFamily);
-            if (cacheItem) {
-              cacheItem.loaded = true;
-            }
-            
-            resolve();
-          }).catch((error) => {
-            console.warn(`Font verification failed for ${fontFamily}, but continuing:`, error);
-            this.loadedFonts.add(fontFamily);
-            resolve();
-          });
+          this.verifyFontReady(fontFamily)
+            .then(() => {
+              this.loadedFonts.add(fontFamily);
+
+              // Update cache to mark font as loaded
+              const cacheItem = this.fontsCache.get(fontFamily);
+              if (cacheItem) {
+                cacheItem.loaded = true;
+              }
+
+              resolve();
+            })
+            .catch((error) => {
+              console.warn(
+                `Font verification failed for ${fontFamily}, but continuing:`,
+                error,
+              );
+              this.loadedFonts.add(fontFamily);
+              resolve();
+            });
         };
-        
+
         link.onerror = () => {
           reject(new Error(`Failed to load font: ${fontFamily}`));
         };
@@ -225,7 +237,7 @@ class GoogleFontsManager {
     try {
       // Use FontFace API to verify font is loaded and ready
       await document.fonts.load(`16px "${fontFamily}"`);
-      
+
       // Additional check: verify font is actually available
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -234,10 +246,10 @@ class GoogleFontsManager {
       // Test if font renders differently than fallback
       ctx.font = `16px "${fontFamily}", Arial`;
       const testWidth = ctx.measureText('Test').width;
-      
+
       ctx.font = '16px Arial';
       const fallbackWidth = ctx.measureText('Test').width;
-      
+
       // If widths are identical, font might not have loaded
       if (Math.abs(testWidth - fallbackWidth) < 0.1) {
         console.warn(`Font ${fontFamily} may not have loaded properly`);
@@ -269,18 +281,18 @@ class GoogleFontsManager {
         try {
           // Use document.fonts.load to ensure font is ready
           await document.fonts.load(`16px "${fontFamily}"`);
-          
+
           // Small delay to ensure font is fully rendered
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         } catch (error) {
           console.warn(`Failed to ensure font ready: ${fontFamily}`, error);
         }
       });
 
       await Promise.all(fontPromises);
-      
+
       // Additional safety delay for all fonts to be fully ready
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     } catch (error) {
       console.warn('Error ensuring fonts ready:', error);
     }
@@ -288,12 +300,22 @@ class GoogleFontsManager {
 
   isSystemFont(fontFamily: string): boolean {
     const systemFonts = [
-      'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 
-      'Courier New', 'Verdana', 'Impact', 'Comic Sans MS', 
-      'Trebuchet MS', 'Palatino', 'serif', 'sans-serif', 'monospace'
+      'Arial',
+      'Helvetica',
+      'Times New Roman',
+      'Georgia',
+      'Courier New',
+      'Verdana',
+      'Impact',
+      'Comic Sans MS',
+      'Trebuchet MS',
+      'Palatino',
+      'serif',
+      'sans-serif',
+      'monospace',
     ];
-    return systemFonts.some(font => 
-      fontFamily.toLowerCase().includes(font.toLowerCase())
+    return systemFonts.some((font) =>
+      fontFamily.toLowerCase().includes(font.toLowerCase()),
     );
   }
 
@@ -306,21 +328,21 @@ class GoogleFontsManager {
    */
   extractFontWeights(textElements: any[]): Map<string, string[]> {
     const fontWeightsMap = new Map<string, string[]>();
-    
-    textElements.forEach(element => {
+
+    textElements.forEach((element) => {
       const fontFamily = element.fontFamily;
       const fontWeight = element.fontWeight?.toString() || '400';
-      
+
       if (!fontWeightsMap.has(fontFamily)) {
         fontWeightsMap.set(fontFamily, []);
       }
-      
+
       const weights = fontWeightsMap.get(fontFamily)!;
       if (!weights.includes(fontWeight)) {
         weights.push(fontWeight);
       }
     });
-    
+
     return fontWeightsMap;
   }
 
@@ -328,28 +350,32 @@ class GoogleFontsManager {
    * Gets all font families currently used in text elements
    */
   getUsedFontFamilies(textElements: any[]): string[] {
-    return [...new Set(textElements.map(element => element.fontFamily))]
-      .filter(font => !this.isSystemFont(font));
+    return [
+      ...new Set(textElements.map((element) => element.fontFamily)),
+    ].filter((font) => !this.isSystemFont(font));
   }
 
   searchFonts(fonts: GoogleFont[], query: string): GoogleFont[] {
     if (!query.trim()) return fonts;
-    
+
     const lowercaseQuery = query.toLowerCase();
-    return fonts.filter(font =>
-      font.family.toLowerCase().includes(lowercaseQuery)
+    return fonts.filter((font) =>
+      font.family.toLowerCase().includes(lowercaseQuery),
     );
   }
 
-  filterFontsByCategory(fonts: GoogleFont[], category?: GoogleFont['category']): GoogleFont[] {
+  filterFontsByCategory(
+    fonts: GoogleFont[],
+    category?: GoogleFont['category'],
+  ): GoogleFont[] {
     if (!category) return fonts;
-    return fonts.filter(font => font.category === category);
+    return fonts.filter((font) => font.category === category);
   }
 
   clearCache() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(POPULAR_FONTS_CACHE_KEY);
-      Object.keys(localStorage).forEach(key => {
+      Object.keys(localStorage).forEach((key) => {
         if (key.startsWith(FONT_SEARCH_CACHE_KEY)) {
           localStorage.removeItem(key);
         }

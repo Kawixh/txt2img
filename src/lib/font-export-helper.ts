@@ -11,9 +11,12 @@ class FontExportHelper {
   /**
    * Ensures a font is loaded and ready for export
    */
-  async ensureFontLoaded(fontFamily: string, weights: string[] = ['400']): Promise<void> {
+  async ensureFontLoaded(
+    fontFamily: string,
+    weights: string[] = ['400'],
+  ): Promise<void> {
     const cacheKey = `${fontFamily}-${weights.join(',')}`;
-    
+
     // Return existing promise if already loading
     if (this.fontLoadPromises.has(cacheKey)) {
       return this.fontLoadPromises.get(cacheKey)!;
@@ -27,19 +30,25 @@ class FontExportHelper {
     // Create and cache the loading promise
     const loadPromise = this.loadFontInternal(fontFamily, weights, cacheKey);
     this.fontLoadPromises.set(cacheKey, loadPromise);
-    
+
     return loadPromise;
   }
 
-  private async loadFontInternal(fontFamily: string, weights: string[], cacheKey: string): Promise<void> {
+  private async loadFontInternal(
+    fontFamily: string,
+    weights: string[],
+    cacheKey: string,
+  ): Promise<void> {
     try {
       // Create Google Fonts URL
       const weightsParam = weights.join(';');
       const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@${weightsParam}&display=block`;
-      
+
       // Check if font link already exists
-      const existingLink = document.querySelector(`link[href*="${encodeURIComponent(fontFamily)}"]`);
-      
+      const existingLink = document.querySelector(
+        `link[href*="${encodeURIComponent(fontFamily)}"]`,
+      );
+
       if (!existingLink) {
         // Create and add font link
         const link = document.createElement('link');
@@ -47,49 +56,57 @@ class FontExportHelper {
         link.href = fontUrl;
         link.setAttribute('data-font-family', fontFamily);
         document.head.appendChild(link);
-        
+
         // Wait for stylesheet to load
         await new Promise<void>((resolve, reject) => {
           link.onload = () => resolve();
-          link.onerror = () => reject(new Error(`Failed to load font: ${fontFamily}`));
-          
+          link.onerror = () =>
+            reject(new Error(`Failed to load font: ${fontFamily}`));
+
           // Timeout after 10 seconds
-          setTimeout(() => reject(new Error(`Font loading timeout: ${fontFamily}`)), 10000);
+          setTimeout(
+            () => reject(new Error(`Font loading timeout: ${fontFamily}`)),
+            10000,
+          );
         });
       }
 
       // Wait for fonts to be available in document.fonts
       await this.waitForFontsReady(fontFamily, weights);
-      
+
       // Additional verification
       await this.verifyFontRendering(fontFamily);
-      
+
       // Mark as loaded
       this.loadedFonts.add(cacheKey);
       console.log(`✓ Font loaded successfully: ${fontFamily}`);
-      
     } catch (error) {
       console.warn(`Failed to load font ${fontFamily}:`, error);
       // Don't throw - allow export to continue with fallback fonts
     }
   }
 
-  private async waitForFontsReady(fontFamily: string, weights: string[]): Promise<void> {
+  private async waitForFontsReady(
+    fontFamily: string,
+    weights: string[],
+  ): Promise<void> {
     if (typeof window === 'undefined' || !document.fonts) {
       return;
     }
 
-    const fontLoadPromises = weights.map(weight => 
-      document.fonts.load(`${weight} 16px "${fontFamily}"`)
-        .catch(error => {
-          console.warn(`Failed to load weight ${weight} for ${fontFamily}:`, error);
-        })
+    const fontLoadPromises = weights.map((weight) =>
+      document.fonts.load(`${weight} 16px "${fontFamily}"`).catch((error) => {
+        console.warn(
+          `Failed to load weight ${weight} for ${fontFamily}:`,
+          error,
+        );
+      }),
     );
 
     await Promise.all(fontLoadPromises);
-    
+
     // Additional wait for font rendering
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   private async verifyFontRendering(fontFamily: string): Promise<void> {
@@ -103,26 +120,33 @@ class FontExportHelper {
       // Test text rendering with the font
       ctx.font = `16px "${fontFamily}", Arial`;
       const testWidth = ctx.measureText('Test Font Rendering').width;
-      
+
       // Test with Arial fallback
       ctx.font = '16px Arial';
       const arialWidth = ctx.measureText('Test Font Rendering').width;
-      
+
       // If they're the same, the font might not be loaded
       if (Math.abs(testWidth - arialWidth) < 1) {
-        console.warn(`Font rendering verification failed for ${fontFamily} - widths are too similar`);
+        console.warn(
+          `Font rendering verification failed for ${fontFamily} - widths are too similar`,
+        );
       }
     } catch (error) {
-      console.warn(`Font rendering verification error for ${fontFamily}:`, error);
+      console.warn(
+        `Font rendering verification error for ${fontFamily}:`,
+        error,
+      );
     }
   }
 
   /**
    * Ensures multiple fonts are loaded
    */
-  async ensureMultipleFontsLoaded(fontsMap: Map<string, string[]>): Promise<void> {
-    const loadPromises = Array.from(fontsMap.entries()).map(([fontFamily, weights]) =>
-      this.ensureFontLoaded(fontFamily, weights)
+  async ensureMultipleFontsLoaded(
+    fontsMap: Map<string, string[]>,
+  ): Promise<void> {
+    const loadPromises = Array.from(fontsMap.entries()).map(
+      ([fontFamily, weights]) => this.ensureFontLoaded(fontFamily, weights),
     );
 
     await Promise.all(loadPromises);
@@ -131,30 +155,33 @@ class FontExportHelper {
   /**
    * Prepares canvas for export with proper font loading and inline styles
    */
-  async prepareForExport(fontFamilies: string[], fontWeightsMap?: Map<string, string[]>): Promise<() => void> {
+  async prepareForExport(
+    fontFamilies: string[],
+    fontWeightsMap?: Map<string, string[]>,
+  ): Promise<() => void> {
     console.log('🔄 Preparing fonts for export...');
-    
+
     // Create fonts map
     const fontsMap = new Map<string, string[]>();
-    fontFamilies.forEach(fontFamily => {
+    fontFamilies.forEach((fontFamily) => {
       const weights = fontWeightsMap?.get(fontFamily) || ['400'];
       fontsMap.set(fontFamily, weights);
     });
 
     // Load all fonts
     await this.ensureMultipleFontsLoaded(fontsMap);
-    
+
     // Create inline font styles to avoid CORS issues with Google Fonts stylesheets
     const inlineStyleElement = this.createInlineFontStyles(fontsMap);
-    
+
     // Force a reflow to ensure fonts are applied
     document.body.offsetHeight; // Trigger reflow
-    
+
     // Wait a bit more for font rendering to stabilize
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
     console.log('✅ Fonts prepared for export with inline styles');
-    
+
     // Return cleanup function to remove inline styles
     return () => {
       if (inlineStyleElement && inlineStyleElement.parentNode) {
@@ -167,12 +194,14 @@ class FontExportHelper {
   /**
    * Creates inline font styles that work around CORS restrictions
    */
-  private createInlineFontStyles(fontsMap: Map<string, string[]>): HTMLStyleElement {
+  private createInlineFontStyles(
+    fontsMap: Map<string, string[]>,
+  ): HTMLStyleElement {
     const styleElement = document.createElement('style');
     styleElement.setAttribute('data-font-export-helper', 'true');
-    
+
     let cssContent = '';
-    
+
     // Add font-face declarations that reference the already loaded fonts
     for (const [fontFamily, weights] of fontsMap) {
       for (const weight of weights) {
@@ -183,7 +212,7 @@ class FontExportHelper {
           }
         `;
       }
-      
+
       // General font family rule
       cssContent += `
         .font-family-${fontFamily.replace(/\s+/g, '-').toLowerCase()} {
@@ -191,10 +220,10 @@ class FontExportHelper {
         }
       `;
     }
-    
+
     styleElement.textContent = cssContent;
     document.head.appendChild(styleElement);
-    
+
     return styleElement;
   }
 

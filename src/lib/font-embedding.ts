@@ -22,16 +22,19 @@ class FontEmbedding {
   /**
    * Embeds a Google Font by using the server-side API
    */
-  async embedFont(fontFamily: string, weights: string[] = ['400']): Promise<EmbeddedFont> {
+  async embedFont(
+    fontFamily: string,
+    weights: string[] = ['400'],
+  ): Promise<EmbeddedFont> {
     const cacheKey = `${fontFamily}-${weights.join(',')}`;
-    
+
     // Check cache first
     if (this.fontCache.has(cacheKey)) {
       const cachedCSS = this.fontCache.get(cacheKey)!;
       return {
         family: fontFamily,
         css: cachedCSS,
-        base64Data: 'cached'
+        base64Data: 'cached',
       };
     }
 
@@ -43,11 +46,13 @@ class FontEmbedding {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fonts: [{
-            family: fontFamily,
-            weights: weights
-          }]
-        })
+          fonts: [
+            {
+              family: fontFamily,
+              weights: weights,
+            },
+          ],
+        }),
       });
 
       if (!response.ok) {
@@ -55,7 +60,7 @@ class FontEmbedding {
       }
 
       const data = await response.json();
-      
+
       if (!data.css) {
         throw new Error(`No CSS returned for font ${fontFamily}`);
       }
@@ -63,12 +68,12 @@ class FontEmbedding {
       const embeddedFont: EmbeddedFont = {
         family: fontFamily,
         css: data.css,
-        base64Data: 'embedded'
+        base64Data: 'embedded',
       };
 
       // Cache the result
       this.fontCache.set(cacheKey, data.css);
-      
+
       return embeddedFont;
     } catch (error) {
       console.error(`Failed to embed font ${fontFamily}:`, error);
@@ -79,7 +84,10 @@ class FontEmbedding {
   /**
    * Embeds multiple fonts and returns combined CSS using server-side API
    */
-  async embedMultipleFonts(fontFamilies: string[], weightsMap?: Map<string, string[]>): Promise<string> {
+  async embedMultipleFonts(
+    fontFamilies: string[],
+    weightsMap?: Map<string, string[]>,
+  ): Promise<string> {
     if (fontFamilies.length === 0) {
       return '';
     }
@@ -91,7 +99,7 @@ class FontEmbedding {
     for (const fontFamily of fontFamilies) {
       const weights = weightsMap?.get(fontFamily) || ['400'];
       const cacheKey = `${fontFamily}-${weights.join(',')}`;
-      
+
       if (this.fontCache.has(cacheKey)) {
         cachedCSS.push(this.fontCache.get(cacheKey)!);
       } else {
@@ -108,8 +116,8 @@ class FontEmbedding {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            fonts: fontsToEmbed
-          })
+            fonts: fontsToEmbed,
+          }),
         });
 
         if (!response.ok) {
@@ -117,10 +125,10 @@ class FontEmbedding {
         }
 
         const data = await response.json();
-        
+
         if (data.css) {
           cachedCSS.push(data.css);
-          
+
           // Cache individual fonts for future use
           // Note: This is a simplified caching approach
           // In a more sophisticated implementation, we'd parse the CSS to cache individual fonts
@@ -130,7 +138,10 @@ class FontEmbedding {
           }
         }
       } catch (error) {
-        console.warn('Failed to embed fonts via API, proceeding without:', error);
+        console.warn(
+          'Failed to embed fonts via API, proceeding without:',
+          error,
+        );
       }
     }
 

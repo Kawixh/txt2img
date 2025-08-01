@@ -15,22 +15,27 @@ export function ExportControls() {
       setError(null);
 
       console.log('🎨 Starting canvas-based export with detailed logging...');
-      console.log('Text elements to export:', state.textElements.map(el => ({
-        id: el.id,
-        content: el.content,
-        x: el.x,
-        y: el.y,
-        width: el.width,
-        fontSize: el.fontSize,
-        textAlign: el.textAlign,
-        fontFamily: el.fontFamily
-      })));
+      console.log(
+        'Text elements to export:',
+        state.textElements.map((el) => ({
+          id: el.id,
+          content: el.content,
+          x: el.x,
+          y: el.y,
+          width: el.width,
+          fontSize: el.fontSize,
+          textAlign: el.textAlign,
+          fontFamily: el.fontFamily,
+        })),
+      );
       console.log('Canvas settings:', state.canvasSettings);
-      
+
       // Get unique font families used in text elements
-      const fontFamilies = [...new Set(state.textElements.map(el => el.fontFamily))];
+      const fontFamilies = [
+        ...new Set(state.textElements.map((el) => el.fontFamily)),
+      ];
       console.log('Font families to ensure:', fontFamilies);
-      
+
       // Use reliable exporter that handles fonts properly
       const dataUrl = await reliableExporter.exportElementToPng(
         'text-canvas',
@@ -38,9 +43,9 @@ export function ExportControls() {
           width: state.canvasSettings.width,
           height: state.canvasSettings.height,
           pixelRatio: 2,
-          quality: 1.0
+          quality: 1.0,
         },
-        fontFamilies
+        fontFamilies,
       );
 
       console.log('✅ Reliable export completed successfully');
@@ -53,8 +58,9 @@ export function ExportControls() {
       setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
       console.error('Export failed:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Export failed';
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Export failed';
       setError(errorMessage);
       setExportStatus('error');
       setTimeout(() => {

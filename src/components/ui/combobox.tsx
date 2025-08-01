@@ -46,7 +46,7 @@ export function Combobox({
   const filteredOptions = React.useMemo(() => {
     if (!searchQuery) return options;
     return options.filter((option) =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase())
+      option.label.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [options, searchQuery]);
 
@@ -63,7 +63,10 @@ export function Combobox({
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -110,7 +113,7 @@ export function Combobox({
       </Button>
 
       {open && (
-        <div className="absolute top-full z-50 mt-1 w-full rounded-md border bg-popover p-0 shadow-md animate-in fade-in-0 zoom-in-95">
+        <div className="bg-popover animate-in fade-in-0 zoom-in-95 absolute top-full z-50 mt-1 w-full rounded-md border p-0 shadow-md">
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
@@ -125,11 +128,11 @@ export function Combobox({
 
           <div className="max-h-60 overflow-auto p-1">
             {loading ? (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+              <div className="text-muted-foreground px-2 py-1.5 text-sm">
                 Loading fonts...
               </div>
             ) : filteredOptions.length === 0 ? (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+              <div className="text-muted-foreground px-2 py-1.5 text-sm">
                 {emptyMessage}
               </div>
             ) : (
@@ -137,15 +140,16 @@ export function Combobox({
                 <div
                   key={option.value}
                   className={cn(
-                    'relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
-                    value === option.value && 'bg-accent text-accent-foreground'
+                    'hover:bg-accent hover:text-accent-foreground relative flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none select-none',
+                    value === option.value &&
+                      'bg-accent text-accent-foreground',
                   )}
                   onClick={() => handleSelect(option.value)}
                 >
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      value === option.value ? 'opacity-100' : 'opacity-0'
+                      value === option.value ? 'opacity-100' : 'opacity-0',
                     )}
                   />
                   {renderOption ? (
@@ -154,7 +158,7 @@ export function Combobox({
                     <div className="flex-1">
                       <div className="font-medium">{option.label}</div>
                       {option.category && (
-                        <div className="text-xs text-muted-foreground capitalize">
+                        <div className="text-muted-foreground text-xs capitalize">
                           {option.category}
                         </div>
                       )}

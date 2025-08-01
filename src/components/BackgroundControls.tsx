@@ -350,101 +350,99 @@ export function BackgroundControls() {
 
   return (
     <div className="space-y-6">
-        {/* Background Type */}
-        <div className="space-y-2">
-          <Label>Background Type</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant={background.type === 'solid' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleBackgroundTypeChange('solid')}
-            >
-              Solid
-            </Button>
-            <Button
-              variant={
-                background.type === 'transparent' ? 'default' : 'outline'
+      {/* Background Type */}
+      <div className="space-y-2">
+        <Label>Background Type</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant={background.type === 'solid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleBackgroundTypeChange('solid')}
+          >
+            Solid
+          </Button>
+          <Button
+            variant={background.type === 'transparent' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleBackgroundTypeChange('transparent')}
+          >
+            Transparent
+          </Button>
+          <Button
+            variant={background.type === 'gradient' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleBackgroundTypeChange('gradient')}
+          >
+            Gradient
+          </Button>
+          <Button
+            variant={background.type === 'pattern' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleBackgroundTypeChange('pattern')}
+          >
+            Pattern
+          </Button>
+        </div>
+      </div>
+
+      {/* Background Options */}
+      {renderBackgroundOptions()}
+
+      {/* Border Radius */}
+      <div className="space-y-2">
+        <Label>Border Radius: {borderRadius}px</Label>
+        <Slider
+          value={[borderRadius]}
+          onValueChange={([value]) =>
+            updateCanvasSettings({ borderRadius: value })
+          }
+          min={0}
+          max={50}
+          step={1}
+          className="w-full"
+        />
+      </div>
+
+      {/* Canvas Size */}
+      <div className="space-y-4">
+        <Label>Canvas Size</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label htmlFor="canvas-width" className="text-xs">
+              Width
+            </Label>
+            <Input
+              id="canvas-width"
+              type="number"
+              value={state.canvasSettings.width}
+              onChange={(e) =>
+                updateCanvasSettings({
+                  width: parseInt(e.target.value) || 800,
+                })
               }
-              size="sm"
-              onClick={() => handleBackgroundTypeChange('transparent')}
-            >
-              Transparent
-            </Button>
-            <Button
-              variant={background.type === 'gradient' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleBackgroundTypeChange('gradient')}
-            >
-              Gradient
-            </Button>
-            <Button
-              variant={background.type === 'pattern' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleBackgroundTypeChange('pattern')}
-            >
-              Pattern
-            </Button>
+              min={100}
+              max={2000}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="canvas-height" className="text-xs">
+              Height
+            </Label>
+            <Input
+              id="canvas-height"
+              type="number"
+              value={state.canvasSettings.height}
+              onChange={(e) =>
+                updateCanvasSettings({
+                  height: parseInt(e.target.value) || 600,
+                })
+              }
+              min={100}
+              max={2000}
+            />
           </div>
         </div>
-
-        {/* Background Options */}
-        {renderBackgroundOptions()}
-
-        {/* Border Radius */}
-        <div className="space-y-2">
-          <Label>Border Radius: {borderRadius}px</Label>
-          <Slider
-            value={[borderRadius]}
-            onValueChange={([value]) =>
-              updateCanvasSettings({ borderRadius: value })
-            }
-            min={0}
-            max={50}
-            step={1}
-            className="w-full"
-          />
-        </div>
-
-        {/* Canvas Size */}
-        <div className="space-y-4">
-          <Label>Canvas Size</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label htmlFor="canvas-width" className="text-xs">
-                Width
-              </Label>
-              <Input
-                id="canvas-width"
-                type="number"
-                value={state.canvasSettings.width}
-                onChange={(e) =>
-                  updateCanvasSettings({
-                    width: parseInt(e.target.value) || 800,
-                  })
-                }
-                min={100}
-                max={2000}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="canvas-height" className="text-xs">
-                Height
-              </Label>
-              <Input
-                id="canvas-height"
-                type="number"
-                value={state.canvasSettings.height}
-                onChange={(e) =>
-                  updateCanvasSettings({
-                    height: parseInt(e.target.value) || 600,
-                  })
-                }
-                min={100}
-                max={2000}
-              />
-            </div>
-          </div>
-        </div>
+      </div>
     </div>
   );
 }

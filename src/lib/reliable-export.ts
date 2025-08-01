@@ -18,7 +18,7 @@ class ReliableExporter {
    */
   private async createInlineFontCSS(fontFamilies: string[]): Promise<string> {
     const fontCSSRules: string[] = [];
-    
+
     for (const fontFamily of fontFamilies) {
       if (this.isSystemFont(fontFamily)) {
         continue;
@@ -48,12 +48,22 @@ class ReliableExporter {
 
   private isSystemFont(fontFamily: string): boolean {
     const systemFonts = [
-      'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 
-      'Courier New', 'Verdana', 'Impact', 'Comic Sans MS', 
-      'Trebuchet MS', 'Palatino', 'serif', 'sans-serif', 'monospace'
+      'Arial',
+      'Helvetica',
+      'Times New Roman',
+      'Georgia',
+      'Courier New',
+      'Verdana',
+      'Impact',
+      'Comic Sans MS',
+      'Trebuchet MS',
+      'Palatino',
+      'serif',
+      'sans-serif',
+      'monospace',
     ];
-    return systemFonts.some(font => 
-      fontFamily.toLowerCase().includes(font.toLowerCase())
+    return systemFonts.some((font) =>
+      fontFamily.toLowerCase().includes(font.toLowerCase()),
     );
   }
 
@@ -66,19 +76,21 @@ class ReliableExporter {
     }
 
     const fontPromises = fontFamilies
-      .filter(font => !this.isSystemFont(font))
+      .filter((font) => !this.isSystemFont(font))
       .map(async (fontFamily) => {
         try {
           await document.fonts.load(`16px "${fontFamily}"`);
           await document.fonts.load(`bold 16px "${fontFamily}"`);
           await document.fonts.load(`italic 16px "${fontFamily}"`);
-          
+
           // Check if font is actually available
           const isLoaded = document.fonts.check(`16px "${fontFamily}"`);
           console.log(`✓ Font ready: ${fontFamily} (loaded: ${isLoaded})`);
-          
+
           // List all loaded fonts for debugging
-          const loadedFonts = Array.from(document.fonts).map(font => font.family);
+          const loadedFonts = Array.from(document.fonts).map(
+            (font) => font.family,
+          );
           console.log(`Available fonts: ${loadedFonts.join(', ')}`);
         } catch (error) {
           console.warn(`Failed to load font: ${fontFamily}`, error);
@@ -86,9 +98,9 @@ class ReliableExporter {
       });
 
     await Promise.all(fontPromises);
-    
+
     // Additional wait for font rendering stability
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     console.log('✅ All fonts ready for export');
   }
 
@@ -97,7 +109,7 @@ class ReliableExporter {
    */
   private async createEmbeddedFontCSS(fontFamilies: string[]): Promise<string> {
     const fontCSSRules: string[] = [];
-    
+
     for (const fontFamily of fontFamilies) {
       if (this.isSystemFont(fontFamily)) {
         continue;
@@ -106,38 +118,44 @@ class ReliableExporter {
       try {
         // Create Google Fonts URL
         const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
-        
+
         // Fetch the CSS
         const response = await fetch(googleFontsUrl);
         const cssText = await response.text();
-        
+
         // Extract font URLs from the CSS and convert to base64
         const fontUrlRegex = /url\((https:\/\/fonts\.gstatic\.com[^)]+)\)/g;
         let embeddedCSS = cssText;
         let match;
-        
+
         while ((match = fontUrlRegex.exec(cssText)) !== null) {
           const fontUrl = match[1];
           try {
             const fontResponse = await fetch(fontUrl);
             const fontBuffer = await fontResponse.arrayBuffer();
-            const base64Font = btoa(String.fromCharCode(...new Uint8Array(fontBuffer)));
-            const mimeType = fontUrl.includes('.woff2') ? 'font/woff2' : 'font/woff';
+            const base64Font = btoa(
+              String.fromCharCode(...new Uint8Array(fontBuffer)),
+            );
+            const mimeType = fontUrl.includes('.woff2')
+              ? 'font/woff2'
+              : 'font/woff';
             const dataUrl = `data:${mimeType};base64,${base64Font}`;
-            
+
             embeddedCSS = embeddedCSS.replace(fontUrl, dataUrl);
             console.log(`✅ Embedded font file for ${fontFamily}`);
           } catch (fontError) {
             console.warn(`Failed to embed font file: ${fontUrl}`, fontError);
           }
         }
-        
+
         fontCSSRules.push(embeddedCSS);
         console.log(`✅ Created embedded CSS for ${fontFamily}`);
-        
       } catch (error) {
-        console.warn(`Failed to create embedded font CSS for ${fontFamily}:`, error);
-        
+        console.warn(
+          `Failed to create embedded font CSS for ${fontFamily}:`,
+          error,
+        );
+
         // Fallback: Create a simple @font-face rule
         fontCSSRules.push(`
           @font-face {
@@ -155,46 +173,62 @@ class ReliableExporter {
   /**
    * Direct style injection approach - temporarily modify DOM elements
    */
-  private injectDirectStyles(elementId: string, fontFamilies: string[]): () => void {
+  private injectDirectStyles(
+    elementId: string,
+    fontFamilies: string[],
+  ): () => void {
     const element = document.getElementById(elementId);
     if (!element) return () => {};
 
     const originalStyles = new Map<Element, string>();
-    
+
     // Get ALL elements including the root element and children
     const allElements = [element, ...Array.from(element.querySelectorAll('*'))];
-    
-    console.log(`🔍 Found ${allElements.length} elements to potentially modify`);
+
+    console.log(
+      `🔍 Found ${allElements.length} elements to potentially modify`,
+    );
 
     // Store original styles and apply font families
-    allElements.forEach(el => {
+    allElements.forEach((el) => {
       const htmlEl = el as HTMLElement;
       const computedStyle = window.getComputedStyle(htmlEl);
-      const currentFontFamily = computedStyle.fontFamily || htmlEl.style.fontFamily;
-      
-      console.log(`Element ${htmlEl.tagName} current font: "${currentFontFamily}"`);
-      
+      const currentFontFamily =
+        computedStyle.fontFamily || htmlEl.style.fontFamily;
+
+      console.log(
+        `Element ${htmlEl.tagName} current font: "${currentFontFamily}"`,
+      );
+
       // Store original style
       originalStyles.set(el, htmlEl.style.cssText);
-      
+
       // Apply font family if we have any to apply
       if (fontFamilies.length > 0) {
         // Try to match any of our target fonts in the current font family
-        const hasTargetFont = fontFamilies.some(font => 
-          currentFontFamily.toLowerCase().includes(font.toLowerCase())
+        const hasTargetFont = fontFamilies.some((font) =>
+          currentFontFamily.toLowerCase().includes(font.toLowerCase()),
         );
-        
+
         if (hasTargetFont || htmlEl.hasAttribute('contenteditable')) {
           // Force the font family with highest priority
           const primaryFont = fontFamilies[0];
           htmlEl.style.fontFamily = `"${primaryFont}", Arial, sans-serif !important`;
-          htmlEl.style.setProperty('font-family', `"${primaryFont}", Arial, sans-serif`, 'important');
-          console.log(`✅ Applied direct style to ${htmlEl.tagName}: ${primaryFont}`);
+          htmlEl.style.setProperty(
+            'font-family',
+            `"${primaryFont}", Arial, sans-serif`,
+            'important',
+          );
+          console.log(
+            `✅ Applied direct style to ${htmlEl.tagName}: ${primaryFont}`,
+          );
         }
       }
     });
 
-    console.log(`📝 Modified ${originalStyles.size} elements with direct styles`);
+    console.log(
+      `📝 Modified ${originalStyles.size} elements with direct styles`,
+    );
 
     // Return cleanup function
     return () => {
@@ -210,9 +244,9 @@ class ReliableExporter {
    * Exports an element to PNG using html-to-image with reliable font handling
    */
   async exportElementToPng(
-    elementId: string, 
+    elementId: string,
     options: ExportOptions,
-    fontFamilies: string[] = []
+    fontFamilies: string[] = [],
   ): Promise<string> {
     const element = document.getElementById(elementId);
     if (!element) {
@@ -233,7 +267,7 @@ class ReliableExporter {
       const embeddedFontCSS = await this.createEmbeddedFontCSS(fontFamilies);
       const aggressiveCSS = await this.createInlineFontCSS(fontFamilies);
       const combinedCSS = embeddedFontCSS + '\n' + aggressiveCSS;
-      
+
       console.log('📝 Generated combined embedded + aggressive CSS');
 
       const dataUrl = await toPng(element, {
@@ -252,23 +286,27 @@ class ReliableExporter {
         },
         filter: (node) => {
           const tagName = node.tagName?.toLowerCase();
-          return !['script', 'noscript', 'meta', 'title', 'link'].includes(tagName);
+          return !['script', 'noscript', 'meta', 'title', 'link'].includes(
+            tagName,
+          );
         },
       });
 
       console.log('✅ Embedded font export completed successfully');
       return dataUrl;
-
     } catch (error) {
-      console.error('Embedded font approach failed, trying direct style injection:', error);
-      
+      console.error(
+        'Embedded font approach failed, trying direct style injection:',
+        error,
+      );
+
       // Step 3: Try direct style injection approach
       let cleanupStyles: (() => void) | null = null;
-      
+
       try {
         // Apply direct styles before export
         cleanupStyles = this.injectDirectStyles(elementId, fontFamilies);
-        
+
         console.log('📝 Direct styles injected, proceeding with export...');
 
         const dataUrl = await toPng(element, {
@@ -286,22 +324,26 @@ class ReliableExporter {
           },
           filter: (node) => {
             const tagName = node.tagName?.toLowerCase();
-            return !['script', 'noscript', 'meta', 'title', 'link'].includes(tagName);
+            return !['script', 'noscript', 'meta', 'title', 'link'].includes(
+              tagName,
+            );
           },
         });
 
         console.log('✅ Direct style injection export completed successfully');
         return dataUrl;
-
       } catch (error2) {
-        console.error('Direct style injection also failed, trying basic CSS approach:', error2);
+        console.error(
+          'Direct style injection also failed, trying basic CSS approach:',
+          error2,
+        );
       } finally {
         // Always clean up direct styles
         if (cleanupStyles) {
           cleanupStyles();
         }
       }
-      
+
       // Step 4: Fallback to CSS-based approach
       const inlineFontCSS = await this.createInlineFontCSS(fontFamilies);
       console.log('Generated inline font CSS:', inlineFontCSS);
@@ -323,16 +365,20 @@ class ReliableExporter {
           },
           filter: (node) => {
             const tagName = node.tagName?.toLowerCase();
-            return !['script', 'noscript', 'meta', 'title', 'link'].includes(tagName);
+            return !['script', 'noscript', 'meta', 'title', 'link'].includes(
+              tagName,
+            );
           },
         });
 
         console.log('✅ CSS-based export completed successfully');
         return dataUrl;
-
       } catch (error2) {
-        console.error('CSS approach also failed, trying minimal fallback:', error2);
-        
+        console.error(
+          'CSS approach also failed, trying minimal fallback:',
+          error2,
+        );
+
         // Final fallback: Minimal approach
         const fallbackDataUrl = await toPng(element, {
           backgroundColor: undefined,
@@ -347,7 +393,14 @@ class ReliableExporter {
           },
           filter: (node) => {
             const tagName = node.tagName?.toLowerCase();
-            return !['script', 'noscript', 'meta', 'title', 'link', 'style'].includes(tagName);
+            return ![
+              'script',
+              'noscript',
+              'meta',
+              'title',
+              'link',
+              'style',
+            ].includes(tagName);
           },
         });
 
@@ -360,7 +413,10 @@ class ReliableExporter {
   /**
    * Downloads the exported image
    */
-  downloadImage(dataUrl: string, filename: string = `export-${Date.now()}.png`): void {
+  downloadImage(
+    dataUrl: string,
+    filename: string = `export-${Date.now()}.png`,
+  ): void {
     const link = document.createElement('a');
     link.download = filename;
     link.href = dataUrl;
