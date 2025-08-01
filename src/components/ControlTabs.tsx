@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Type, Move, Palette } from 'lucide-react';
-import { TextInput } from './TextInput';
+import { Move, Palette, Plus, Type } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useState } from 'react';
+import { BackgroundControls } from './BackgroundControls';
 import { FontControls } from './FontControls';
 import { PositionControls } from './PositionControls';
-import { BackgroundControls } from './BackgroundControls';
+import { TextInput } from './TextInput';
 
 type TabId = 'content' | 'styling' | 'layout' | 'background';
 
@@ -52,7 +52,7 @@ export function ControlTabs() {
   return (
     <div className="flex h-full flex-col">
       {/* Tab Navigation */}
-      <div className="grid grid-cols-4 gap-2 glass-panel border-0 border-b border-border/20 p-3">
+      <div className="glass-panel border-border/20 grid grid-cols-4 gap-2 border-0 border-b p-3">
         {tabs.map((tab, index) => (
           <motion.div
             key={tab.id}
@@ -64,7 +64,7 @@ export function ControlTabs() {
               variant={activeTab === tab.id ? 'gradient' : 'glass'}
               size="sm"
               onClick={() => setActiveTab(tab.id)}
-              className="flex h-16 flex-col gap-2 text-xs relative group"
+              className="group relative flex h-16 flex-col gap-2 text-xs"
             >
               <motion.div
                 animate={{
@@ -75,13 +75,15 @@ export function ControlTabs() {
               >
                 {tab.icon}
               </motion.div>
-              <span className="hidden sm:block font-medium word-wrap">{tab.label}</span>
+              <span className="word-wrap hidden font-medium sm:block">
+                {tab.label}
+              </span>
               {activeTab === tab.id && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl"
+                  className="absolute inset-0 rounded-xl"
                   initial={false}
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                 />
               )}
             </Button>
@@ -90,8 +92,8 @@ export function ControlTabs() {
       </div>
 
       {/* Tab Content */}
-      <div className="max-h-[calc(100vh-12rem)] flex-1 overflow-y-auto p-4 container-safe">
-        <Card className="border-0 shadow-none glass-panel rounded-2xl">
+      <div className="container-safe max-h-[calc(100vh-12rem)] flex-1 overflow-y-auto p-4">
+        <Card className="glass-panel rounded-2xl border-0 shadow-none">
           <CardContent className="p-4">
             <AnimatePresence mode="wait">
               <motion.div
