@@ -26,7 +26,8 @@ import {
   Strikethrough,
   Underline,
 } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { FontAxis, getVariableFontInfo } from '@/lib/variable-fonts';
 
 const FALLBACK_FONTS = [
   'Arial',
@@ -69,12 +70,43 @@ export function FontControls() {
     (element) => element.id === state.selectedElementId,
   );
 
+  // Variable font state
+  const [variableFontAxes, setVariableFontAxes] = useState<FontAxis[]>([]);
+  const [isDetectingAxes, setIsDetectingAxes] = useState(false);
+
   // Initialize Google Fonts on component mount
   useEffect(() => {
     if (state.fonts.fonts.length === 0 && !state.fonts.isLoading) {
       fetchFonts({ sort: 'popularity' });
     }
   }, [fetchFonts, state.fonts.fonts.length, state.fonts.isLoading]);
+
+  // Detect variable font axes when font family changes
+  useEffect(() => {
+    if (!selectedElement) return;
+
+    const detectAxes = async () => {
+      setIsDetectingAxes(true);
+      try {
+        const fontInfo = await getVariableFontInfo(selectedElement.fontFamily);
+        setVariableFontAxes(fontInfo.axes);
+      } catch (error) {
+        console.warn('Failed to detect variable font axes:', error);
+        setVariableFontAxes([]);
+      } finally {
+        setIsDetectingAxes(false);
+      }
+    };
+
+    // Only detect axes for loaded fonts or after a delay for Google Fonts
+    if (state.fonts.loadedFonts.has(selectedElement.fontFamily)) {
+      detectAxes();
+    } else {
+      // Wait a bit for Google Fonts to load
+      const timer = setTimeout(detectAxes, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedElement?.fontFamily, state.fonts.loadedFonts]);
 
   // Prepare font options for the combobox
   const fontOptions: ComboboxOption[] = useMemo(() => {
@@ -473,6 +505,46 @@ export function FontControls() {
           />
         </div>
       </div>
+
+      {/* Variable Font Controls */}
+      {variableFontAxes.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Label>Variable Font Axes</Label>
+            {isDetectingAxes && <Loader2 className="h-3 w-3 animate-spin" />}
+          </div>
+          <div className="space-y-3">
+            {variableFontAxes.map((axis) => {
+              const currentValue = selectedElement.fontVariationSettings?.[axis.tag] ?? axis.default;
+              return (
+                <div key={axis.tag} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={`axis-${axis.tag}`} className="text-sm">
+                      {axis.name} ({axis.tag})
+                    </Label>
+                    <span className="text-sm text-muted-foreground">
+                      {currentValue}
+                    </span>
+                  </div>
+                  <Slider
+                    id={`axis-${axis.tag}`}
+                    min={axis.min}
+                    max={axis.max}
+                    step={axis.tag === 'ital' ? 1 : (axis.max - axis.min) > 100 ? 1 : 0.1}
+                    value={[currentValue]}
+                    onValueChange={([value]) => {
+                      const currentSettings = selectedElement.fontVariationSettings || {};
+                      const newSettings = { ...currentSettings, [axis.tag]: value };
+                      updateSelectedElement({ fontVariationSettings: newSettings });
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

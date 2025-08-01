@@ -30,6 +30,7 @@ export interface TextElement {
   lineHeight: number;
   letterSpacing: number;
   wordSpacing: number;
+  fontVariationSettings?: Record<string, number>;
   width: number;
   positionPreset: PositionPreset;
   paddingX: number;
@@ -108,6 +109,12 @@ export interface GoogleFont {
   files: Record<string, string>;
   category: 'serif' | 'sans-serif' | 'display' | 'handwriting' | 'monospace';
   kind: string;
+  axes?: Array<{
+    tag: string;
+    min: number;
+    max: number;
+    defaultValue: number;
+  }>;
 }
 
 export interface GoogleFontsResponse {

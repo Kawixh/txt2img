@@ -109,6 +109,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         lineHeight: 1.2,
         letterSpacing: 0,
         wordSpacing: 0,
+        fontVariationSettings: {},
         color: '#000000',
         textAlign: 'left',
         width: 200,
@@ -369,23 +370,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Filter by category
       if (state.fonts.selectedCategory) {
         if (state.fonts.selectedCategory === 'variable') {
-          // Filter for variable fonts
+          // Filter for variable fonts with improved detection
           fonts = fonts.filter(font => {
-            // Variable fonts typically have variants that include axis information
-            // or variants like "400", "400italic", "wght", "wdth", etc.
-            return font.variants.some(variant =>
-              // Check for axis names common in variable fonts
-              variant.includes('wght') || 
-              variant.includes('wdth') || 
-              variant.includes('slnt') || 
-              variant.includes('opsz') ||
-              // Check for CSS font-variation-settings compatible variants
-              /^\d+$/.test(variant) === false && variant.length > 10
-            ) || 
-            // Also check if font family name suggests it's variable
-            font.family.toLowerCase().includes('variable') ||
-            // Check if it has many weight variants (likely variable)
-            font.variants.filter(v => /^\d{3}(italic)?$/.test(v)).length > 6;
+            // First check if the font has explicit axes information
+            if (font.axes && font.axes.length > 0) {
+              return true;
+            }
+            
+            // Check for variable font indicators in the font family name
+            const familyName = font.family.toLowerCase();
+            if (familyName.includes('variable') || familyName.includes('vf')) {
+              return true;
+            }
+            
+            // Check for variable font variants patterns
+            const hasVariableVariants = font.variants.some(variant => 
+              // Variable fonts often have bracketed ranges like "wght@300..800"
+              variant.includes('@') ||
+              // Or axis names
+              /^(wght|wdth|slnt|ital|opsz|grad)/.test(variant) ||
+              // Or specific variable font indicators
+              variant === 'variable' ||
+              variant.includes('[')
+            );
+            
+            if (hasVariableVariants) {
+              return true;
+            }
+            
+            // Check if font has an unusually high number of weight variants
+            // (likely indicates it's a variable font with many static instances)
+            const weightVariants = font.variants.filter(v => /^\d{3}(italic)?$/.test(v));
+            if (weightVariants.length > 8) {
+              return true;
+            }
+            
+            // Check for specific Google Fonts known to be variable
+            const knownVariableFontFamilies = [
+              'Inter', 'Roboto Flex', 'Source Sans Pro', 'Open Sans',
+              'Lato', 'Montserrat', 'Oswald', 'Raleway', 'Noto Sans',
+              'Fira Sans', 'Work Sans', 'Libre Franklin', 'IBM Plex Sans',
+              'Crimson Pro', 'Literata', 'Fraunces', 'Recursive'
+            ];
+            
+            return knownVariableFontFamilies.some(knownFont => 
+              familyName.includes(knownFont.toLowerCase())
+            );
           });
         } else {
           fonts = googleFontsManager.filterFontsByCategory(

@@ -4,7 +4,7 @@ import { useApp } from '@/contexts/AppContext';
 import { TextElement as TextElementType } from '@/types';
 import { calculateFinalPosition } from '@/lib/positioning';
 import { Trash2 } from 'lucide-react';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 
 interface TextElementProps {
   element: TextElementType;
@@ -16,12 +16,38 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     useApp();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [localContent, setLocalContent] = useState(element.content);
   const elementRef = useRef<HTMLDivElement>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Check if this element's font is currently being loaded
   const isLoadingFont =
     state.fonts.isLoadingFont &&
     state.fonts.currentlyLoadingFont === element.fontFamily;
+
+  // Sync local content with element content when it changes externally
+  useEffect(() => {
+    setLocalContent(element.content);
+  }, [element.content]);
+
+  // Debounced update function
+  const debouncedUpdateContent = useCallback((content: string) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      updateTextElement(element.id, { content });
+    }, 300); // 300ms debounce
+  }, [element.id, updateTextElement]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -58,9 +84,9 @@ export function TextElement({ element, isSelected }: TextElementProps) {
   }, [isDragging, dragStart]);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLDivElement>) => {
-    updateTextElement(element.id, {
-      content: e.currentTarget.textContent || '',
-    });
+    const newContent = e.currentTarget.textContent || '';
+    setLocalContent(newContent);
+    debouncedUpdateContent(newContent);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -68,57 +94,80 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     removeTextElement(element.id);
   };
 
-  // Calculate position based on preset and padding
-
-  useEffect(() => {
-    if (element.positionPreset !== 'manual' && elementRef.current) {
-      const canvasDimensions = {
-        width: state.canvasSettings.width,
-        height: state.canvasSettings.height,
-      };
-
-      // Get actual element dimensions including padding and content
-      const elementRect = elementRef.current.getBoundingClientRect();
-      const actualWidth = elementRect.width || element.width;
-      const actualHeight = elementRect.height || element.fontSize * 1.4; // Fallback with better estimate
-
-      const finalPosition = calculateFinalPosition({
-        preset: element.positionPreset,
-        canvasDimensions,
-        elementWidth: actualWidth,
-        elementHeight: actualHeight,
-        paddingX: element.paddingX,
-        paddingY: element.paddingY,
-      });
-
-      // Only update if position actually changed to avoid infinite loops
-      if (
-        Math.abs(element.x - finalPosition.x) > 1 ||
-        Math.abs(element.y - finalPosition.y) > 1
-      ) {
-        updateTextElement(element.id, {
-          x: Math.max(
-            0,
-            Math.min(finalPosition.x, canvasDimensions.width - actualWidth),
-          ),
-          y: Math.max(
-            0,
-            Math.min(finalPosition.y, canvasDimensions.height - actualHeight),
-          ),
-        });
-      }
+  // Memoized position calculation
+  const calculateElementPosition = useCallback(() => {
+    if (element.positionPreset === 'manual' || !elementRef.current) {
+      return null;
     }
+
+    const canvasDimensions = {
+      width: state.canvasSettings.width,
+      height: state.canvasSettings.height,
+    };
+
+    // Get actual element dimensions including padding and content
+    const elementRect = elementRef.current.getBoundingClientRect();
+    const actualWidth = elementRect.width || element.width;
+    const actualHeight = elementRect.height || element.fontSize * 1.4; // Fallback with better estimate
+
+    const finalPosition = calculateFinalPosition({
+      preset: element.positionPreset,
+      canvasDimensions,
+      elementWidth: actualWidth,
+      elementHeight: actualHeight,
+      paddingX: element.paddingX,
+      paddingY: element.paddingY,
+    });
+
+    return {
+      x: Math.max(
+        0,
+        Math.min(finalPosition.x, canvasDimensions.width - actualWidth),
+      ),
+      y: Math.max(
+        0,
+        Math.min(finalPosition.y, canvasDimensions.height - actualHeight),
+      ),
+      actualWidth,
+      actualHeight,
+    };
   }, [
     element.positionPreset,
     element.paddingX,
     element.paddingY,
     element.width,
     element.fontSize,
+    state.canvasSettings.width,
+    state.canvasSettings.height,
+  ]);
+
+  // Calculate position based on preset and padding
+  useEffect(() => {
+    const newPosition = calculateElementPosition();
+    
+    if (newPosition) {
+      // Only update if position actually changed to avoid infinite loops
+      if (
+        Math.abs(element.x - newPosition.x) > 1 ||
+        Math.abs(element.y - newPosition.y) > 1
+      ) {
+        updateTextElement(element.id, {
+          x: newPosition.x,
+          y: newPosition.y,
+        });
+      }
+    }
+  }, [
+    calculateElementPosition,
+    element.x,
+    element.y,
+    element.id,
+    updateTextElement,
     element.content,
     element.wordWrap,
   ]);
 
-  const getFontStyle = () => {
+  const fontStyle = useMemo(() => {
     // Handle textDecoration object format
     const decorations = [];
     if (element.textDecoration?.underline) decorations.push('underline');
@@ -126,7 +175,15 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     if (element.textDecoration?.strikethrough) decorations.push('line-through');
     const textDecoration = decorations.length > 0 ? decorations.join(' ') : 'none';
 
-    return {
+    // Handle font variation settings
+    let fontVariationSettings = '';
+    if (element.fontVariationSettings && Object.keys(element.fontVariationSettings).length > 0) {
+      fontVariationSettings = Object.entries(element.fontVariationSettings)
+        .map(([axis, value]) => `"${axis}" ${value}`)
+        .join(', ');
+    }
+
+    const baseStyle = {
       fontSize: `${element.fontSize}px`,
       fontFamily: element.fontFamily,
       fontWeight: element.fontWeight,
@@ -155,15 +212,42 @@ export function TextElement({ element, isSelected }: TextElementProps) {
       minHeight: '20px',
       transition: 'color 0.3s ease-in-out',
     };
-  };
+
+    // Add font variation settings if present
+    if (fontVariationSettings) {
+      (baseStyle as Record<string, any>).fontVariationSettings = fontVariationSettings;
+    }
+
+    return baseStyle;
+  }, [
+    element.fontSize,
+    element.fontFamily,
+    element.fontWeight,
+    element.fontStyle,
+    element.textDecoration,
+    element.textTransform,
+    element.lineHeight,
+    element.letterSpacing,
+    element.wordSpacing,
+    element.fontVariationSettings,
+    element.color,
+    element.textAlign,
+    element.x,
+    element.y,
+    element.width,
+    element.wordWrap,
+    isLoadingFont,
+    isDragging,
+    isSelected,
+  ]);
 
   return (
     <div className="relative">
       <div
         ref={elementRef}
-        style={getFontStyle()}
+        style={fontStyle}
         className={isLoadingFont ? 'text-shimmer' : ''}
-        data-text={element.content}
+        data-text={localContent}
         onMouseDown={handleMouseDown}
         onClick={() => selectElement(element.id)}
         contentEditable
@@ -171,7 +255,7 @@ export function TextElement({ element, isSelected }: TextElementProps) {
         onInput={handleContentChange}
         onBlur={handleContentChange}
       >
-        {element.content}
+        {localContent}
       </div>
       {isSelected && (
         <button
