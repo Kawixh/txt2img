@@ -16,11 +16,14 @@ import { useApp } from '@/contexts/AppContext';
 import { GoogleFont } from '@/types';
 import {
   AlignCenter,
+  AlignJustify,
   AlignLeft,
   AlignRight,
   Bold,
   Italic,
   Loader2,
+  Minus,
+  Strikethrough,
   Underline,
 } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
@@ -39,7 +42,7 @@ const FALLBACK_FONTS = [
 ];
 
 const FONT_CATEGORIES: Array<{
-  value: GoogleFont['category'] | 'all';
+  value: GoogleFont['category'] | 'all' | 'variable';
   label: string;
 }> = [
   { value: 'all', label: 'All Categories' },
@@ -48,6 +51,7 @@ const FONT_CATEGORIES: Array<{
   { value: 'display', label: 'Display' },
   { value: 'handwriting', label: 'Handwriting' },
   { value: 'monospace', label: 'Monospace' },
+  { value: 'variable', label: 'Variable Fonts' },
 ];
 
 export function FontControls() {
@@ -121,7 +125,7 @@ export function FontControls() {
     }
   };
 
-  const handleCategoryChange = (category: GoogleFont['category'] | 'all') => {
+  const handleCategoryChange = (category: GoogleFont['category'] | 'all' | 'variable') => {
     setSelectedCategory(category === 'all' ? '' : category);
   };
 
@@ -267,21 +271,60 @@ export function FontControls() {
           </Button>
           <Button
             variant={
-              selectedElement.textDecoration === 'underline'
+              selectedElement.textDecoration?.underline
                 ? 'default'
                 : 'outline'
             }
             size="sm"
             onClick={() =>
               updateSelectedElement({
-                textDecoration:
-                  selectedElement.textDecoration === 'underline'
-                    ? 'none'
-                    : 'underline',
+                textDecoration: {
+                  underline: !selectedElement.textDecoration?.underline,
+                  overline: selectedElement.textDecoration?.overline || false,
+                  strikethrough: selectedElement.textDecoration?.strikethrough || false,
+                },
               })
             }
           >
             <Underline size={16} />
+          </Button>
+          <Button
+            variant={
+              selectedElement.textDecoration?.strikethrough
+                ? 'default'
+                : 'outline'
+            }
+            size="sm"
+            onClick={() =>
+              updateSelectedElement({
+                textDecoration: {
+                  underline: selectedElement.textDecoration?.underline || false,
+                  overline: selectedElement.textDecoration?.overline || false,
+                  strikethrough: !selectedElement.textDecoration?.strikethrough,
+                },
+              })
+            }
+          >
+            <Strikethrough size={16} />
+          </Button>
+          <Button
+            variant={
+              selectedElement.textDecoration?.overline
+                ? 'default'
+                : 'outline'
+            }
+            size="sm"
+            onClick={() =>
+              updateSelectedElement({
+                textDecoration: {
+                  underline: selectedElement.textDecoration?.underline || false,
+                  overline: !selectedElement.textDecoration?.overline,
+                  strikethrough: selectedElement.textDecoration?.strikethrough || false,
+                },
+              })
+            }
+          >
+            <Minus size={16} />
           </Button>
         </div>
       </div>
@@ -317,7 +360,98 @@ export function FontControls() {
           >
             <AlignRight size={16} />
           </Button>
+          <Button
+            variant={
+              selectedElement.textAlign === 'justify' ? 'default' : 'outline'
+            }
+            size="sm"
+            onClick={() => updateSelectedElement({ textAlign: 'justify' })}
+          >
+            <AlignJustify size={16} />
+          </Button>
         </div>
+      </div>
+
+      {/* Typography Spacing */}
+      <div className="space-y-2">
+        <Label>Typography Spacing</Label>
+        
+        {/* Line Height */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="line-height">Line Height</Label>
+            <span className="text-sm text-muted-foreground">
+              {selectedElement.lineHeight?.toFixed(1) || '1.2'}
+            </span>
+          </div>
+          <Slider
+            id="line-height"
+            min={1.0}
+            max={3.0}
+            step={0.1}
+            value={[selectedElement.lineHeight || 1.2]}
+            onValueChange={([value]) => updateSelectedElement({ lineHeight: value })}
+            className="w-full"
+          />
+        </div>
+
+        {/* Letter Spacing */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="letter-spacing">Letter Spacing</Label>
+            <span className="text-sm text-muted-foreground">
+              {selectedElement.letterSpacing?.toFixed(1) || '0.0'}px
+            </span>
+          </div>
+          <Slider
+            id="letter-spacing"
+            min={-2}
+            max={10}
+            step={0.1}
+            value={[selectedElement.letterSpacing || 0]}
+            onValueChange={([value]) => updateSelectedElement({ letterSpacing: value })}
+            className="w-full"
+          />
+        </div>
+
+        {/* Word Spacing */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="word-spacing">Word Spacing</Label>
+            <span className="text-sm text-muted-foreground">
+              {selectedElement.wordSpacing?.toFixed(1) || '0.0'}px
+            </span>
+          </div>
+          <Slider
+            id="word-spacing"
+            min={-5}
+            max={20}
+            step={0.1}
+            value={[selectedElement.wordSpacing || 0]}
+            onValueChange={([value]) => updateSelectedElement({ wordSpacing: value })}
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      {/* Text Transform */}
+      <div className="space-y-2">
+        <Label htmlFor="text-transform">Text Transform</Label>
+        <Select
+          value={selectedElement.textTransform || 'none'}
+          onValueChange={(value) => updateSelectedElement({ textTransform: value as 'none' | 'uppercase' | 'lowercase' | 'capitalize' | 'small-caps' })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select text transform" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">None</SelectItem>
+            <SelectItem value="uppercase">UPPERCASE</SelectItem>
+            <SelectItem value="lowercase">lowercase</SelectItem>
+            <SelectItem value="capitalize">Capitalize</SelectItem>
+            <SelectItem value="small-caps">Small Caps</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Text Color */}

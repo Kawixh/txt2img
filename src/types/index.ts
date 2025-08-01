@@ -19,9 +19,17 @@ export interface TextElement {
   fontFamily: string;
   fontWeight: 'normal' | 'bold';
   fontStyle: 'normal' | 'italic';
-  textDecoration: 'none' | 'underline';
+  textDecoration: {
+    underline: boolean;
+    overline: boolean;
+    strikethrough: boolean;
+  };
+  textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize' | 'small-caps';
   color: string;
-  textAlign: 'left' | 'center' | 'right';
+  textAlign: 'left' | 'center' | 'right' | 'justify';
+  lineHeight: number;
+  letterSpacing: number;
+  wordSpacing: number;
   width: number;
   positionPreset: PositionPreset;
   paddingX: number;

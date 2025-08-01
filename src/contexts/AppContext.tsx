@@ -29,7 +29,7 @@ interface AppContextType {
   setFontLoading: (loading: boolean) => void;
   setFontsError: (error: string | null) => void;
   setSearchQuery: (query: string) => void;
-  setSelectedCategory: (category: GoogleFont['category'] | '') => void;
+  setSelectedCategory: (category: GoogleFont['category'] | 'variable' | '') => void;
   getFilteredFonts: () => GoogleFont[];
 }
 
@@ -63,7 +63,7 @@ type AppAction =
   | { type: 'SET_SEARCH_QUERY'; payload: { query: string } }
   | {
       type: 'SET_SELECTED_CATEGORY';
-      payload: { category: GoogleFont['category'] | '' };
+      payload: { category: GoogleFont['category'] | 'variable' | '' };
     }
   | { type: 'ADD_LOADED_FONT'; payload: { fontFamily: string } };
 
@@ -104,7 +104,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
         fontFamily: 'Arial',
         fontWeight: 'normal',
         fontStyle: 'normal',
-        textDecoration: 'none',
+        textDecoration: { underline: false, overline: false, strikethrough: false },
+        textTransform: 'none',
+        lineHeight: 1.2,
+        letterSpacing: 0,
+        wordSpacing: 0,
         color: '#000000',
         textAlign: 'left',
         width: 200,
@@ -356,7 +360,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchQuery: (query: string) => {
       dispatch({ type: 'SET_SEARCH_QUERY', payload: { query } });
     },
-    setSelectedCategory: (category: GoogleFont['category'] | '') => {
+    setSelectedCategory: (category: GoogleFont['category'] | 'variable' | '') => {
       dispatch({ type: 'SET_SELECTED_CATEGORY', payload: { category } });
     },
     getFilteredFonts: () => {
@@ -364,10 +368,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Filter by category
       if (state.fonts.selectedCategory) {
-        fonts = googleFontsManager.filterFontsByCategory(
-          fonts,
-          state.fonts.selectedCategory,
-        );
+        if (state.fonts.selectedCategory === 'variable') {
+          // Filter for variable fonts
+          fonts = fonts.filter(font => {
+            // Variable fonts typically have variants that include axis information
+            // or variants like "400", "400italic", "wght", "wdth", etc.
+            return font.variants.some(variant =>
+              // Check for axis names common in variable fonts
+              variant.includes('wght') || 
+              variant.includes('wdth') || 
+              variant.includes('slnt') || 
+              variant.includes('opsz') ||
+              // Check for CSS font-variation-settings compatible variants
+              /^\d+$/.test(variant) === false && variant.length > 10
+            ) || 
+            // Also check if font family name suggests it's variable
+            font.family.toLowerCase().includes('variable') ||
+            // Check if it has many weight variants (likely variable)
+            font.variants.filter(v => /^\d{3}(italic)?$/.test(v)).length > 6;
+          });
+        } else {
+          fonts = googleFontsManager.filterFontsByCategory(
+            fonts,
+            state.fonts.selectedCategory as GoogleFont['category'],
+          );
+        }
       }
 
       // Filter by search query

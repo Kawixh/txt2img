@@ -118,31 +118,44 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     element.wordWrap,
   ]);
 
-  const getFontStyle = () => ({
-    fontSize: `${element.fontSize}px`,
-    fontFamily: element.fontFamily,
-    fontWeight: element.fontWeight,
-    fontStyle: element.fontStyle,
-    textDecoration: element.textDecoration,
-    color: isLoadingFont ? 'transparent' : element.color,
-    textAlign: element.textAlign as 'left' | 'center' | 'right',
-    position: 'absolute' as const,
-    left: `${element.x}px`,
-    top: `${element.y}px`,
-    width: `${element.width}px`,
-    whiteSpace: element.wordWrap ? 'pre-wrap' : 'nowrap',
-    wordWrap: element.wordWrap ? 'break-word' : 'normal',
-    overflowWrap: element.wordWrap ? 'break-word' : 'normal',
-    cursor: isDragging ? 'grabbing' : 'grab',
-    userSelect: 'none' as const,
-    outline: 'none',
-    border: isSelected ? '2px dashed #3b82f6' : '2px dashed transparent',
-    padding: '4px',
-    borderRadius: '4px',
-    minWidth: '20px',
-    minHeight: '20px',
-    transition: 'color 0.3s ease-in-out',
-  });
+  const getFontStyle = () => {
+    // Handle textDecoration object format
+    const decorations = [];
+    if (element.textDecoration?.underline) decorations.push('underline');
+    if (element.textDecoration?.overline) decorations.push('overline');
+    if (element.textDecoration?.strikethrough) decorations.push('line-through');
+    const textDecoration = decorations.length > 0 ? decorations.join(' ') : 'none';
+
+    return {
+      fontSize: `${element.fontSize}px`,
+      fontFamily: element.fontFamily,
+      fontWeight: element.fontWeight,
+      fontStyle: element.fontStyle,
+      textDecoration,
+      textTransform: element.textTransform || 'none',
+      lineHeight: element.lineHeight || 1.2,
+      letterSpacing: `${element.letterSpacing || 0}px`,
+      wordSpacing: `${element.wordSpacing || 0}px`,
+      color: isLoadingFont ? 'transparent' : element.color,
+      textAlign: element.textAlign as 'left' | 'center' | 'right' | 'justify',
+      position: 'absolute' as const,
+      left: `${element.x}px`,
+      top: `${element.y}px`,
+      width: `${element.width}px`,
+      whiteSpace: element.wordWrap ? 'pre-wrap' : 'nowrap',
+      wordWrap: element.wordWrap ? 'break-word' : 'normal',
+      overflowWrap: element.wordWrap ? 'break-word' : 'normal',
+      cursor: isDragging ? 'grabbing' : 'grab',
+      userSelect: 'none' as const,
+      outline: 'none',
+      border: isSelected ? '2px dashed #3b82f6' : '2px dashed transparent',
+      padding: '4px',
+      borderRadius: '4px',
+      minWidth: '20px',
+      minHeight: '20px',
+      transition: 'color 0.3s ease-in-out',
+    };
+  };
 
   return (
     <div className="relative">
