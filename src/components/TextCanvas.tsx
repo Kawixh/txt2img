@@ -88,13 +88,13 @@ export function TextCanvas() {
   };
 
   return (
-    <div className="flex justify-center p-8">
+    <div className="flex justify-center p-4 container-safe">
       <div
         ref={canvasRef}
         id="text-canvas"
         style={canvasStyle}
         onClick={handleCanvasClick}
-        className="shadow-lg"
+        className="transition-smooth hover:shadow-2xl hover:shadow-purple-500/10 relative overflow-hidden group"
       >
         {state.textElements.map((element) => (
           <TextElement
@@ -104,10 +104,20 @@ export function TextCanvas() {
           />
         ))}
         {state.textElements.length === 0 && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-lg text-gray-400">
-            Click &quot;Add Text&quot; to start creating your image
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="text-center animate-bounce-subtle">
+              <div className="text-6xl mb-4 animate-float">✨</div>
+              <p className="text-lg text-muted-foreground font-medium word-wrap">
+                Click "Add Text" to start creating
+              </p>
+              <p className="text-sm text-muted-foreground/70 mt-2 word-wrap">
+                Your canvas awaits some magic!
+              </p>
+            </div>
           </div>
         )}
+        
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-smooth pointer-events-none" />
       </div>
     </div>
   );
