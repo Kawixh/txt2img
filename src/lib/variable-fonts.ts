@@ -1,4 +1,5 @@
 // Variable font utilities for detecting and working with variable font axes
+import { googleFontsManager, GoogleFont } from './google-fonts';
 
 export interface FontAxis {
   tag: string;
@@ -6,28 +7,38 @@ export interface FontAxis {
   min: number;
   max: number;
   default: number;
+  description?: string;
 }
 
 export interface VariableFontInfo {
   isVariable: boolean;
   axes: FontAxis[];
+  cached?: boolean;
 }
 
-// Common variable font axes with their human-readable names
-const AXIS_NAMES: Record<string, string> = {
-  wght: 'Weight',
-  wdth: 'Width',
-  slnt: 'Slant',
-  ital: 'Italic',
-  opsz: 'Optical Size',
-  grad: 'Grade',
-  xhgt: 'X-Height',
-  yopq: 'Y Opaque',
-  ytlc: 'Y Transparent LC',
-  ytuc: 'Y Transparent UC',
-  ytas: 'Y Transparent Ascender',
-  ytde: 'Y Transparent Descender',
-  ytfi: 'Y Transparent Figure',
+// Common variable font axes with their human-readable names and descriptions
+const AXIS_INFO: Record<string, { name: string; description: string }> = {
+  wght: { name: 'Weight', description: 'Controls the thickness of strokes' },
+  wdth: { name: 'Width', description: 'Controls the horizontal expansion or compression' },
+  slnt: { name: 'Slant', description: 'Controls the slant angle of the font' },
+  ital: { name: 'Italic', description: 'Controls italic vs roman letterforms' },
+  opsz: { name: 'Optical Size', description: 'Optimizes font for different sizes' },
+  grad: { name: 'Grade', description: 'Controls the weight without changing width' },
+  xhgt: { name: 'X-Height', description: 'Controls the height of lowercase letters' },
+  yopq: { name: 'Y Opaque', description: 'Controls horizontal stroke thickness' },
+  ytlc: { name: 'Y Transparent LC', description: 'Controls lowercase ascender thickness' },
+  ytuc: { name: 'Y Transparent UC', description: 'Controls uppercase thickness' },
+  ytas: { name: 'Y Transparent Ascenders', description: 'Controls ascender thickness' },
+  ytde: { name: 'Y Transparent Descenders', description: 'Controls descender thickness' },
+  ytfi: { name: 'Y Transparent Figures', description: 'Controls figure thickness' },
+  // Additional common axes
+  CASL: { name: 'Casual', description: 'Controls casual vs linear letterforms' },
+  CRSV: { name: 'Cursive', description: 'Controls cursive letterforms' },
+  EXPR: { name: 'Expression', description: 'Controls the level of stylistic expression' },
+  FILL: { name: 'Fill', description: 'Controls the fill of outlined fonts' },
+  FLAR: { name: 'Flare', description: 'Controls the flare of serif terminals' },
+  SOFT: { name: 'Softness', description: 'Controls the softness of corners' },
+  WONK: { name: 'Wonky', description: 'Controls the wonkiness or quirkiness' },
 };
 
 // Default ranges for common axes
@@ -38,11 +49,46 @@ const AXIS_RANGES: Record<string, { min: number; max: number; default: number }>
   ital: { min: 0, max: 1, default: 0 },
   opsz: { min: 6, max: 72, default: 14 },
   grad: { min: -200, max: 150, default: 0 },
+  xhgt: { min: 400, max: 1000, default: 500 },
+  yopq: { min: 25, max: 135, default: 79 },
+  ytlc: { min: 416, max: 570, default: 514 },
+  ytuc: { min: 528, max: 760, default: 712 },
+  ytas: { min: 649, max: 854, default: 750 },
+  ytde: { min: -305, max: -98, default: -203 },
+  ytfi: { min: 600, max: 900, default: 738 },
+  CASL: { min: 0, max: 1, default: 0 },
+  CRSV: { min: 0, max: 1, default: 0 },
+  EXPR: { min: 0, max: 100, default: 0 },
+  FILL: { min: 0, max: 1, default: 1 },
+  FLAR: { min: 0, max: 100, default: 0 },
+  SOFT: { min: 0, max: 100, default: 0 },
+  WONK: { min: 0, max: 1, default: 0 },
 };
 
+// Cache for variable font info to avoid repeated detection
+const variableFontCache = new Map<string, VariableFontInfo>();
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
 /**
- * Detects if a font is a variable font by checking its CSS font-variation-settings support
- * This is a heuristic approach since we can't directly access OpenType tables in the browser
+ * Checks if a font is likely variable based on Google Fonts API data
+ */
+function checkGoogleFontsVariableStatus(fontFamily: string): boolean {
+  // Common variable fonts on Google Fonts (this could be expanded or fetched from API)
+  const knownVariableFonts = [
+    'Inter', 'Roboto Flex', 'Crimson Pro', 'Literata', 'Source Serif Pro',
+    'Comfortaa', 'Recursive', 'Markazi Text', 'Playfair Display',
+    'Fraunces', 'Commissioner', 'Manrope', 'IBM Plex Sans', 'Outfit',
+    'Public Sans', 'Space Grotesk', 'DM Sans', 'Epilogue', 'Plus Jakarta Sans',
+    'Hanken Grotesk', 'Red Hat Display', 'Figtree', 'Albert Sans'
+  ];
+  
+  return knownVariableFonts.some(vf => 
+    fontFamily.toLowerCase().includes(vf.toLowerCase())
+  );
+}
+
+/**
+ * Enhanced detection with multiple methods and better heuristics
  */
 export function isVariableFont(fontFamily: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -51,32 +97,67 @@ export function isVariableFont(fontFamily: string): Promise<boolean> {
       return;
     }
 
-    // Create a test element
+    // First check if it's a known variable font
+    if (checkGoogleFontsVariableStatus(fontFamily)) {
+      resolve(true);
+      return;
+    }
+
+    // Create multiple test elements with different text to improve detection
+    const testTexts = ['Test Variable Font Wgjp', 'ABCDEFGHIJK abcdefghijk 123'];
     const testElement = document.createElement('div');
     testElement.style.position = 'absolute';
     testElement.style.visibility = 'hidden';
     testElement.style.fontFamily = fontFamily;
-    testElement.style.fontSize = '16px';
-    testElement.textContent = 'Test';
+    testElement.style.fontSize = '24px'; // Larger size for better detection
+    testElement.style.whiteSpace = 'nowrap';
     
     document.body.appendChild(testElement);
 
     try {
-      // Test if font-variation-settings is supported and affects the font
-      const originalWidth = testElement.offsetWidth;
+      let isVariable = false;
       
-      // Try to apply a common variable font axis
-      testElement.style.fontVariationSettings = '"wght" 100';
-      const lightWidth = testElement.offsetWidth;
-      
-      testElement.style.fontVariationSettings = '"wght" 900';
-      const boldWidth = testElement.offsetWidth;
-      
-      // Reset
-      testElement.style.fontVariationSettings = '';
-      
-      // If widths are different, it's likely a variable font
-      const isVariable = lightWidth !== boldWidth || lightWidth !== originalWidth;
+      for (const testText of testTexts) {
+        testElement.textContent = testText;
+        
+        // Get baseline measurements
+        const originalWidth = testElement.offsetWidth;
+        const originalHeight = testElement.offsetHeight;
+        
+        // Test multiple common axes with more extreme values
+        const axesToTest = [
+          { axis: 'wght', min: 100, max: 900 },
+          { axis: 'wdth', min: 75, max: 125 },
+          { axis: 'opsz', min: 8, max: 72 }
+        ];
+        
+        for (const { axis, min, max } of axesToTest) {
+          // Test minimum value
+          testElement.style.fontVariationSettings = `"${axis}" ${min}`;
+          const minWidth = testElement.offsetWidth;
+          const minHeight = testElement.offsetHeight;
+          
+          // Test maximum value
+          testElement.style.fontVariationSettings = `"${axis}" ${max}`;
+          const maxWidth = testElement.offsetWidth;
+          const maxHeight = testElement.offsetHeight;
+          
+          // Reset
+          testElement.style.fontVariationSettings = '';
+          
+          // Check for significant changes (accounting for browser rounding)
+          const widthDiff = Math.abs(minWidth - maxWidth);
+          const heightDiff = Math.abs(minHeight - maxHeight);
+          const baselineDiff = Math.abs(originalWidth - minWidth) + Math.abs(originalWidth - maxWidth);
+          
+          if (widthDiff > 1 || heightDiff > 1 || baselineDiff > 1) {
+            isVariable = true;
+            break;
+          }
+        }
+        
+        if (isVariable) break;
+      }
       
       document.body.removeChild(testElement);
       resolve(isVariable);
@@ -88,12 +169,55 @@ export function isVariableFont(fontFamily: string): Promise<boolean> {
 }
 
 /**
- * Attempts to detect available axes for a variable font
- * This is a best-effort approach using common axis combinations
+ * Gets axis information from Google Fonts API data if available
+ */
+function getAxisInfoFromGoogleFonts(fontFamily: string): FontAxis[] | null {
+  // This would ideally fetch from Google Fonts API v2 metadata
+  // For now, return known axes for common variable fonts
+  const fontAxesMap: Record<string, FontAxis[]> = {
+    'Inter': [
+      { tag: 'wght', name: 'Weight', min: 100, max: 900, default: 400, description: 'Controls the thickness of strokes' },
+      { tag: 'slnt', name: 'Slant', min: -10, max: 0, default: 0, description: 'Controls the slant angle' }
+    ],
+    'Roboto Flex': [
+      { tag: 'wght', name: 'Weight', min: 100, max: 1000, default: 400, description: 'Controls the thickness of strokes' },
+      { tag: 'wdth', name: 'Width', min: 25, max: 151, default: 100, description: 'Controls horizontal expansion' },
+      { tag: 'opsz', name: 'Optical Size', min: 8, max: 144, default: 14, description: 'Optimizes for different sizes' },
+      { tag: 'GRAD', name: 'Grade', min: -200, max: 150, default: 0, description: 'Controls weight without changing width' },
+      { tag: 'slnt', name: 'Slant', min: -10, max: 0, default: 0, description: 'Controls the slant angle' },
+      { tag: 'XTRA', name: 'X Transparent', min: 323, max: 603, default: 468, description: 'Controls character width' }
+    ],
+    'Recursive': [
+      { tag: 'wght', name: 'Weight', min: 300, max: 1000, default: 400, description: 'Controls the thickness of strokes' },
+      { tag: 'slnt', name: 'Slant', min: -15, max: 0, default: 0, description: 'Controls the slant angle' },
+      { tag: 'MONO', name: 'Monospace', min: 0, max: 1, default: 0, description: 'Switches between proportional and monospace' },
+      { tag: 'CASL', name: 'Casual', min: 0, max: 1, default: 0, description: 'Controls casual vs linear letterforms' },
+      { tag: 'CRSV', name: 'Cursive', min: 0, max: 1, default: 0.5, description: 'Controls cursive letterforms' }
+    ],
+    // Add more known fonts here...
+  };
+  
+  for (const [knownFont, axes] of Object.entries(fontAxesMap)) {
+    if (fontFamily.toLowerCase().includes(knownFont.toLowerCase())) {
+      return axes;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Enhanced axis detection with better heuristics and multiple test strategies
  */
 export async function detectVariableFontAxes(fontFamily: string): Promise<FontAxis[]> {
   if (typeof window === 'undefined' || !document) {
     return [];
+  }
+
+  // First try to get from known Google Fonts data
+  const googleFontsAxes = getAxisInfoFromGoogleFonts(fontFamily);
+  if (googleFontsAxes) {
+    return googleFontsAxes;
   }
 
   const axes: FontAxis[] = [];
@@ -101,45 +225,64 @@ export async function detectVariableFontAxes(fontFamily: string): Promise<FontAx
   testElement.style.position = 'absolute';
   testElement.style.visibility = 'hidden';
   testElement.style.fontFamily = fontFamily;
-  testElement.style.fontSize = '16px';
-  testElement.textContent = 'Test Variable Font';
+  testElement.style.fontSize = '24px'; // Larger for better detection
+  testElement.style.whiteSpace = 'nowrap';
+  
+  // Use multiple test strings for better detection
+  const testStrings = [
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+    'The quick brown fox jumps over the lazy dog',
+    'Hamburgefonstiv HAMBURGEFONSTIV 1234567890'
+  ];
   
   document.body.appendChild(testElement);
 
   try {
-    // Test common axes
+    // Test each possible axis
     for (const [axisTag, range] of Object.entries(AXIS_RANGES)) {
-      const originalWidth = testElement.offsetWidth;
-      const originalHeight = testElement.offsetHeight;
+      let axisSupported = false;
       
-      // Test minimum value
-      testElement.style.fontVariationSettings = `"${axisTag}" ${range.min}`;
-      const minWidth = testElement.offsetWidth;
-      const minHeight = testElement.offsetHeight;
+      // Test with multiple strings to improve detection accuracy
+      for (const testString of testStrings) {
+        testElement.textContent = testString;
+        
+        const originalWidth = testElement.offsetWidth;
+        const originalHeight = testElement.offsetHeight;
+        
+        // Test with a wider range of values for better detection
+        const testValues = [range.min, range.default, range.max];
+        const measurements: Array<{ width: number; height: number }> = [];
+        
+        for (const value of testValues) {
+          testElement.style.fontVariationSettings = `"${axisTag}" ${value}`;
+          measurements.push({
+            width: testElement.offsetWidth,
+            height: testElement.offsetHeight
+          });
+        }
+        
+        // Reset
+        testElement.style.fontVariationSettings = '';
+        
+        // Check for meaningful differences (accounting for browser rounding)
+        const widthVariation = Math.max(...measurements.map(m => m.width)) - Math.min(...measurements.map(m => m.width));
+        const heightVariation = Math.max(...measurements.map(m => m.height)) - Math.min(...measurements.map(m => m.height));
+        
+        if (widthVariation > 2 || heightVariation > 2) {
+          axisSupported = true;
+          break;
+        }
+      }
       
-      // Test maximum value
-      testElement.style.fontVariationSettings = `"${axisTag}" ${range.max}`;
-      const maxWidth = testElement.offsetWidth;
-      const maxHeight = testElement.offsetHeight;
-      
-      // Reset
-      testElement.style.fontVariationSettings = '';
-      
-      // If dimensions changed, this axis is supported
-      if (
-        minWidth !== originalWidth || 
-        maxWidth !== originalWidth || 
-        minHeight !== originalHeight || 
-        maxHeight !== originalHeight ||
-        minWidth !== maxWidth ||
-        minHeight !== maxHeight
-      ) {
+      if (axisSupported) {
+        const axisInfo = AXIS_INFO[axisTag];
         axes.push({
           tag: axisTag,
-          name: AXIS_NAMES[axisTag] || axisTag.toUpperCase(),
+          name: axisInfo?.name || axisTag.toUpperCase(),
           min: range.min,
           max: range.max,
           default: range.default,
+          description: axisInfo?.description,
         });
       }
     }
@@ -153,16 +296,79 @@ export async function detectVariableFontAxes(fontFamily: string): Promise<FontAx
 }
 
 /**
- * Get variable font information including detection and available axes
+ * Get variable font information with caching for better performance
  */
 export async function getVariableFontInfo(fontFamily: string): Promise<VariableFontInfo> {
+  // Check cache first
+  const cached = variableFontCache.get(fontFamily);
+  if (cached && Date.now() - (cached as any).timestamp < CACHE_DURATION) {
+    return { ...cached, cached: true };
+  }
+  
   const isVariable = await isVariableFont(fontFamily);
   const axes = isVariable ? await detectVariableFontAxes(fontFamily) : [];
   
-  return {
+  const info: VariableFontInfo = {
     isVariable,
     axes,
+    cached: false,
   };
+  
+  // Cache the result with timestamp
+  (info as any).timestamp = Date.now();
+  variableFontCache.set(fontFamily, info);
+  
+  return info;
+}
+
+/**
+ * Clear the variable font cache
+ */
+export function clearVariableFontCache(): void {
+  variableFontCache.clear();
+}
+
+/**
+ * Check if a font family is in the variable font cache
+ */
+export function isVariableFontCached(fontFamily: string): boolean {
+  const cached = variableFontCache.get(fontFamily);
+  return cached && Date.now() - (cached as any).timestamp < CACHE_DURATION;
+}
+
+/**
+ * Get cached variable font info without triggering detection
+ */
+export function getCachedVariableFontInfo(fontFamily: string): VariableFontInfo | null {
+  const cached = variableFontCache.get(fontFamily);
+  if (cached && Date.now() - (cached as any).timestamp < CACHE_DURATION) {
+    return { ...cached, cached: true };
+  }
+  return null;
+}
+
+/**
+ * Pre-populate cache with known variable fonts for better UX
+ */
+export function preloadKnownVariableFonts(): void {
+  const knownVariableFonts = [
+    'Inter', 'Roboto Flex', 'Recursive', 'Crimson Pro', 'Literata',
+    'Source Serif Pro', 'Comfortaa', 'Manrope', 'Commissioner',
+    'Fraunces', 'Public Sans', 'Space Grotesk', 'DM Sans'
+  ];
+  
+  knownVariableFonts.forEach(fontFamily => {
+    const axes = getAxisInfoFromGoogleFonts(fontFamily);
+    if (axes) {
+      const info: VariableFontInfo = {
+        isVariable: true,
+        axes,
+        cached: false,
+      };
+      (info as any).timestamp = Date.now();
+      variableFontCache.set(fontFamily, info);
+    }
+  });
 }
 
 /**
