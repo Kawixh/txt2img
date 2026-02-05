@@ -1,18 +1,24 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from 'react';
 import {
   AppState,
-  TextElement,
-  CanvasSettings,
   BackgroundConfig,
-  GoogleFont,
+  CanvasSettings,
   FontSearchOptions,
+  GoogleFont,
+  TextElement,
 } from '@/types';
 import { googleFontsManager } from '@/lib/google-fonts';
 
-interface AppContextType {
-  state: AppState;
+interface AppActions {
   addTextElement: (content: string) => void;
   updateTextElement: (id: string, updates: Partial<TextElement>) => void;
   removeTextElement: (id: string) => void;
@@ -22,16 +28,24 @@ interface AppContextType {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setExportStatus: (status: AppState['exportStatus']) => void;
-  // Font management
   fetchFonts: (options?: FontSearchOptions) => Promise<void>;
-  loadFont: (fontFamily: string, variants?: string[]) => Promise<void>;
+  loadFont: (
+    fontFamily: string,
+    options?: { variants?: string[]; axes?: GoogleFont['axes'] },
+  ) => Promise<void>;
   setFontsLoading: (loading: boolean) => void;
-  setFontLoading: (loading: boolean) => void;
+  setFontLoading: (loading: boolean, fontFamily?: string) => void;
   setFontsError: (error: string | null) => void;
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (category: GoogleFont['category'] | 'variable' | '') => void;
   getFilteredFonts: () => GoogleFont[];
 }
+
+type AppStore = {
+  getState: () => AppState;
+  subscribe: (listener: () => void) => () => void;
+  actions: AppActions;
+};
 
 type AppAction =
   | { type: 'ADD_TEXT_ELEMENT'; payload: { content: string } }
@@ -73,7 +87,7 @@ const initialState: AppState = {
     width: 800,
     height: 600,
     background: { type: 'solid', color: '#ffffff' },
-    borderRadius: 0,
+    borderRadius: 16,
   },
   selectedElementId: null,
   isLoading: false,
@@ -100,19 +114,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
         content: action.payload.content,
         x: 50,
         y: 50,
-        fontSize: 24,
+        fontSize: 36,
         fontFamily: 'Arial',
-        fontWeight: 'normal',
+        fontWeight: 400,
         fontStyle: 'normal',
+        fontSlant: 0,
+        fontStretch: 100,
         textDecoration: { underline: false, overline: false, strikethrough: false },
         textTransform: 'none',
         lineHeight: 1.2,
         letterSpacing: 0,
         wordSpacing: 0,
         fontVariationSettings: {},
-        color: '#000000',
+        color: '#141414',
         textAlign: 'left',
-        width: 200,
+        width: 260,
         positionPreset: 'manual',
         paddingX: 0,
         paddingY: 0,
@@ -267,13 +283,22 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+function createAppStore(): AppStore {
+  let state = initialState;
+  const listeners = new Set<() => void>();
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  const getState = () => state;
 
-  const contextValue: AppContextType = {
-    state,
+  const setState = (nextState: AppState) => {
+    state = nextState;
+    listeners.forEach((listener) => listener());
+  };
+
+  const dispatch = (action: AppAction) => {
+    setState(appReducer(state, action));
+  };
+
+  const actions: AppActions = {
     addTextElement: (content: string) => {
       dispatch({ type: 'ADD_TEXT_ELEMENT', payload: { content } });
     },
@@ -301,7 +326,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setExportStatus: (status: AppState['exportStatus']) => {
       dispatch({ type: 'SET_EXPORT_STATUS', payload: { status } });
     },
-    // Font management functions
     fetchFonts: async (options?: FontSearchOptions) => {
       dispatch({ type: 'SET_FONTS_LOADING', payload: { loading: true } });
       dispatch({ type: 'SET_FONTS_ERROR', payload: { error: null } });
@@ -317,31 +341,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        // If no fonts were fetched (API not configured), don't set an error
         if (fonts.length === 0) {
-          console.warn(
-            'No Google Fonts available, using fallback system fonts',
-          );
+          console.warn('No Google Fonts available, using fallback system fonts');
         }
       } catch (error) {
-        console.warn(
-          'Google Fonts API error, falling back to system fonts:',
-          error,
-        );
-        // Don't set an error state for API configuration issues
+        console.warn('Google Fonts API error, falling back to system fonts:', error);
         dispatch({ type: 'SET_FONTS', payload: { fonts: [] } });
       } finally {
         dispatch({ type: 'SET_FONTS_LOADING', payload: { loading: false } });
       }
     },
-    loadFont: async (fontFamily: string, variants?: string[]) => {
+    loadFont: async (
+      fontFamily: string,
+      options?: { variants?: string[]; axes?: GoogleFont['axes'] },
+    ) => {
       dispatch({
         type: 'SET_FONT_LOADING',
         payload: { loading: true, fontFamily },
       });
 
       try {
-        await googleFontsManager.loadFont(fontFamily, variants);
+        await googleFontsManager.loadFont(fontFamily, options);
         dispatch({ type: 'ADD_LOADED_FONT', payload: { fontFamily } });
       } catch (error) {
         console.error('Failed to load font:', error);
@@ -367,56 +387,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getFilteredFonts: () => {
       let fonts = state.fonts.fonts;
 
-      // Filter by category
       if (state.fonts.selectedCategory) {
         if (state.fonts.selectedCategory === 'variable') {
-          // Filter for variable fonts with improved detection
-          fonts = fonts.filter(font => {
-            // First check if the font has explicit axes information
-            if (font.axes && font.axes.length > 0) {
-              return true;
-            }
-            
-            // Check for variable font indicators in the font family name
-            const familyName = font.family.toLowerCase();
-            if (familyName.includes('variable') || familyName.includes('vf')) {
-              return true;
-            }
-            
-            // Check for variable font variants patterns
-            const hasVariableVariants = font.variants.some(variant => 
-              // Variable fonts often have bracketed ranges like "wght@300..800"
-              variant.includes('@') ||
-              // Or axis names
-              /^(wght|wdth|slnt|ital|opsz|grad)/.test(variant) ||
-              // Or specific variable font indicators
-              variant === 'variable' ||
-              variant.includes('[')
-            );
-            
-            if (hasVariableVariants) {
-              return true;
-            }
-            
-            // Check if font has an unusually high number of weight variants
-            // (likely indicates it's a variable font with many static instances)
-            const weightVariants = font.variants.filter(v => /^\d{3}(italic)?$/.test(v));
-            if (weightVariants.length > 8) {
-              return true;
-            }
-            
-            // Check for specific Google Fonts known to be variable
-            const knownVariableFontFamilies = [
-              'Inter', 'Roboto Flex', 'Source Sans Pro', 'Open Sans',
-              'Lato', 'Montserrat', 'Oswald', 'Raleway', 'Noto Sans',
-              'Fira Sans', 'Work Sans', 'Libre Franklin', 'IBM Plex Sans',
-              'Crimson Pro', 'Literata', 'Fraunces', 'Recursive'
-            ];
-            
-            return knownVariableFontFamilies.some(knownFont => 
-              familyName.includes(knownFont.toLowerCase())
-            );
-          });
+          fonts = fonts.filter((font) => font.axes && font.axes.length > 0);
         } else {
           fonts = googleFontsManager.filterFontsByCategory(
             fonts,
@@ -425,7 +398,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Filter by search query
       if (state.fonts.searchQuery) {
         fonts = googleFontsManager.searchFonts(fonts, state.fonts.searchQuery);
       }
@@ -434,15 +406,81 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
   };
 
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  };
+
+  return { getState, subscribe, actions };
+}
+
+const AppStoreContext = createContext<AppStore | null>(null);
+
+export function AppProvider({ children }: { children: React.ReactNode }) {
+  const storeRef = useRef<AppStore | null>(null);
+
+  if (!storeRef.current) {
+    storeRef.current = createAppStore();
+  }
+
   return (
-    <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
+    <AppStoreContext.Provider value={storeRef.current}>
+      {children}
+    </AppStoreContext.Provider>
   );
 }
 
-export function useApp() {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
+export function useAppStore<T>(
+  selector: (state: AppState) => T,
+  isEqual: (a: T, b: T) => boolean = Object.is,
+): T {
+  const store = useContext(AppStoreContext);
+
+  if (!store) {
+    throw new Error('useAppStore must be used within an AppProvider');
   }
-  return context;
+
+  const lastSelectionRef = useRef<T | undefined>(undefined);
+  const hasSelectionRef = useRef(false);
+
+  const getSnapshot = useCallback(() => {
+    const next = selector(store.getState());
+
+    if (hasSelectionRef.current) {
+      const prev = lastSelectionRef.current as T;
+      if (isEqual(prev, next)) {
+        return prev;
+      }
+    }
+
+    hasSelectionRef.current = true;
+    lastSelectionRef.current = next;
+    return next;
+  }, [isEqual, selector, store]);
+
+  return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
+}
+
+export function useAppActions(): AppActions {
+  const store = useContext(AppStoreContext);
+
+  if (!store) {
+    throw new Error('useAppActions must be used within an AppProvider');
+  }
+
+  return store.actions;
+}
+
+// Legacy convenience hook (avoid in new code).
+export function useApp() {
+  const state = useAppStore((current) => current);
+  const actions = useAppActions();
+
+  return useMemo(
+    () => ({
+      state,
+      ...actions,
+    }),
+    [actions, state],
+  );
 }

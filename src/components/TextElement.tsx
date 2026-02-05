@@ -1,46 +1,63 @@
 'use client';
 
-import { useApp } from '@/contexts/AppContext';
-import { TextElement as TextElementType } from '@/types';
+import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { calculateFinalPosition } from '@/lib/positioning';
 import { Trash2 } from 'lucide-react';
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 
 interface TextElementProps {
-  element: TextElementType;
-  isSelected: boolean;
+  elementId: string;
 }
 
-export function TextElement({ element, isSelected }: TextElementProps) {
-  const { updateTextElement, removeTextElement, selectElement, state } =
-    useApp();
+function TextElementComponent({ elementId }: TextElementProps) {
+  const { updateTextElement, removeTextElement, selectElement } = useAppActions();
+  const element = useAppStore(
+    (state) =>
+      state.textElements.find((item) => item.id === elementId) || null,
+  );
+  const isSelected = useAppStore(
+    (state) => state.selectedElementId === elementId,
+  );
+  const canvasSize = useAppStore(
+    (state) => ({
+      width: state.canvasSettings.width,
+      height: state.canvasSettings.height,
+    }),
+    (a, b) => a.width === b.width && a.height === b.height,
+  );
+  const isLoadingFont = useAppStore((state) => {
+    if (!element) return false;
+    return (
+      state.fonts.isLoadingFont &&
+      state.fonts.currentlyLoadingFont === element.fontFamily
+    );
+  });
+
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [localContent, setLocalContent] = useState(element.content);
+  const [localContent, setLocalContent] = useState('');
   const elementRef = useRef<HTMLDivElement>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Check if this element's font is currently being loaded
-  const isLoadingFont =
-    state.fonts.isLoadingFont &&
-    state.fonts.currentlyLoadingFont === element.fontFamily;
-
-  // Sync local content with element content when it changes externally
   useEffect(() => {
-    setLocalContent(element.content);
-  }, [element.content]);
-
-  // Debounced update function
-  const debouncedUpdateContent = useCallback((content: string) => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
+    if (element) {
+      setLocalContent(element.content);
     }
-    debounceTimeoutRef.current = setTimeout(() => {
-      updateTextElement(element.id, { content });
-    }, 300); // 300ms debounce
-  }, [element.id, updateTextElement]);
+  }, [element?.content]);
 
-  // Cleanup timeout on unmount
+  const debouncedUpdateContent = useCallback(
+    (content: string) => {
+      if (!element) return;
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      debounceTimeoutRef.current = setTimeout(() => {
+        updateTextElement(element.id, { content });
+      }, 300);
+    },
+    [element, updateTextElement],
+  );
+
   useEffect(() => {
     return () => {
       if (debounceTimeoutRef.current) {
@@ -50,6 +67,7 @@ export function TextElement({ element, isSelected }: TextElementProps) {
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (!element) return;
     e.preventDefault();
     setIsDragging(true);
     setDragStart({
@@ -60,7 +78,7 @@ export function TextElement({ element, isSelected }: TextElementProps) {
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging || !element) return;
 
     const newX = e.clientX - dragStart.x;
     const newY = e.clientY - dragStart.y;
@@ -72,7 +90,7 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     setIsDragging(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -81,9 +99,10 @@ export function TextElement({ element, isSelected }: TextElementProps) {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, dragStart]);
+  }, [isDragging, dragStart, element]);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLDivElement>) => {
+    if (!element) return;
     const newContent = e.currentTarget.textContent || '';
     setLocalContent(newContent);
     debouncedUpdateContent(newContent);
@@ -91,28 +110,21 @@ export function TextElement({ element, isSelected }: TextElementProps) {
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    removeTextElement(element.id);
+    removeTextElement(elementId);
   };
 
-  // Memoized position calculation
   const calculateElementPosition = useCallback(() => {
-    if (element.positionPreset === 'manual' || !elementRef.current) {
+    if (!element || element.positionPreset === 'manual' || !elementRef.current) {
       return null;
     }
 
-    const canvasDimensions = {
-      width: state.canvasSettings.width,
-      height: state.canvasSettings.height,
-    };
-
-    // Get actual element dimensions including padding and content
     const elementRect = elementRef.current.getBoundingClientRect();
     const actualWidth = elementRect.width || element.width;
-    const actualHeight = elementRect.height || element.fontSize * 1.4; // Fallback with better estimate
+    const actualHeight = elementRect.height || element.fontSize * 1.4;
 
     const finalPosition = calculateFinalPosition({
       preset: element.positionPreset,
-      canvasDimensions,
+      canvasDimensions: canvasSize,
       elementWidth: actualWidth,
       elementHeight: actualHeight,
       paddingX: element.paddingX,
@@ -120,33 +132,21 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     });
 
     return {
-      x: Math.max(
-        0,
-        Math.min(finalPosition.x, canvasDimensions.width - actualWidth),
-      ),
-      y: Math.max(
-        0,
-        Math.min(finalPosition.y, canvasDimensions.height - actualHeight),
-      ),
+      x: Math.max(0, Math.min(finalPosition.x, canvasSize.width - actualWidth)),
+      y: Math.max(0, Math.min(finalPosition.y, canvasSize.height - actualHeight)),
       actualWidth,
       actualHeight,
     };
   }, [
-    element.positionPreset,
-    element.paddingX,
-    element.paddingY,
-    element.width,
-    element.fontSize,
-    state.canvasSettings.width,
-    state.canvasSettings.height,
+    canvasSize,
+    element,
   ]);
 
-  // Calculate position based on preset and padding
   useEffect(() => {
+    if (!element) return;
+
     const newPosition = calculateElementPosition();
-    
     if (newPosition) {
-      // Only update if position actually changed to avoid infinite loops
       if (
         Math.abs(element.x - newPosition.x) > 1 ||
         Math.abs(element.y - newPosition.y) > 1
@@ -159,43 +159,52 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     }
   }, [
     calculateElementPosition,
-    element.x,
-    element.y,
-    element.id,
+    element?.x,
+    element?.y,
+    element?.id,
+    element?.content,
+    element?.wordWrap,
     updateTextElement,
-    element.content,
-    element.wordWrap,
   ]);
 
   const fontStyle = useMemo(() => {
-    // Handle textDecoration object format
+    if (!element) return {} as React.CSSProperties;
+
     const decorations = [];
     if (element.textDecoration?.underline) decorations.push('underline');
     if (element.textDecoration?.overline) decorations.push('overline');
     if (element.textDecoration?.strikethrough) decorations.push('line-through');
     const textDecoration = decorations.length > 0 ? decorations.join(' ') : 'none';
 
-    // Handle font variation settings
     let fontVariationSettings = '';
-    if (element.fontVariationSettings && Object.keys(element.fontVariationSettings).length > 0) {
+    if (
+      element.fontVariationSettings &&
+      Object.keys(element.fontVariationSettings).length > 0
+    ) {
       fontVariationSettings = Object.entries(element.fontVariationSettings)
         .map(([axis, value]) => `"${axis}" ${value}`)
         .join(', ');
     }
 
-    const baseStyle = {
+    const fontStyleValue: React.CSSProperties['fontStyle'] =
+      element.fontStyle === 'oblique'
+        ? `oblique ${element.fontSlant ?? 0}deg`
+        : element.fontStyle;
+
+    const baseStyle: React.CSSProperties = {
       fontSize: `${element.fontSize}px`,
       fontFamily: element.fontFamily,
       fontWeight: element.fontWeight,
-      fontStyle: element.fontStyle,
+      fontStyle: fontStyleValue,
+      fontStretch: element.fontStretch ? `${element.fontStretch}%` : undefined,
       textDecoration,
       textTransform: element.textTransform || 'none',
       lineHeight: element.lineHeight || 1.2,
       letterSpacing: `${element.letterSpacing || 0}px`,
       wordSpacing: `${element.wordSpacing || 0}px`,
-      color: isLoadingFont ? 'transparent' : element.color,
+      color: element.color,
       textAlign: element.textAlign as 'left' | 'center' | 'right' | 'justify',
-      position: 'absolute' as const,
+      position: 'absolute',
       left: `${element.x}px`,
       top: `${element.y}px`,
       width: `${element.width}px`,
@@ -203,50 +212,38 @@ export function TextElement({ element, isSelected }: TextElementProps) {
       wordWrap: element.wordWrap ? 'break-word' : 'normal',
       overflowWrap: element.wordWrap ? 'break-word' : 'normal',
       cursor: isDragging ? 'grabbing' : 'grab',
-      userSelect: 'none' as const,
+      userSelect: isDragging ? 'none' : 'text',
       outline: 'none',
-      border: isSelected ? '2px dashed #3b82f6' : '2px dashed transparent',
-      padding: '4px',
-      borderRadius: '4px',
+      border: isSelected
+        ? '1px dashed var(--primary)'
+        : '1px dashed transparent',
+      padding: '6px 8px',
+      borderRadius: '8px',
       minWidth: '20px',
       minHeight: '20px',
-      transition: 'color 0.3s ease-in-out',
+      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
     };
 
-    // Add font variation settings if present
     if (fontVariationSettings) {
-      (baseStyle as Record<string, any>).fontVariationSettings = fontVariationSettings;
+      (baseStyle as Record<string, any>).fontVariationSettings =
+        fontVariationSettings;
     }
 
     return baseStyle;
   }, [
-    element.fontSize,
-    element.fontFamily,
-    element.fontWeight,
-    element.fontStyle,
-    element.textDecoration,
-    element.textTransform,
-    element.lineHeight,
-    element.letterSpacing,
-    element.wordSpacing,
-    element.fontVariationSettings,
-    element.color,
-    element.textAlign,
-    element.x,
-    element.y,
-    element.width,
-    element.wordWrap,
-    isLoadingFont,
+    element,
     isDragging,
     isSelected,
   ]);
+
+  if (!element) return null;
 
   return (
     <div className="relative">
       <div
         ref={elementRef}
         style={fontStyle}
-        className={isLoadingFont ? 'text-shimmer' : ''}
+        className={isLoadingFont ? 'text-loading' : ''}
         data-text={localContent}
         onMouseDown={handleMouseDown}
         onClick={() => selectElement(element.id)}
@@ -260,10 +257,10 @@ export function TextElement({ element, isSelected }: TextElementProps) {
       {isSelected && (
         <button
           onClick={handleDelete}
-          className="absolute top-0 right-0 max-w-min translate-x-2 -translate-y-2 transform rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
+          className="absolute right-0 top-0 max-w-min -translate-y-2 translate-x-2 rounded-full border border-border/70 bg-card p-1 text-foreground shadow-sm transition hover:border-destructive hover:text-destructive"
           style={{
             left: `${element.x + 100}px`,
-            top: `${element.y - 10}px`,
+            top: `${element.y - 12}px`,
           }}
         >
           <Trash2 size={12} />
@@ -272,3 +269,5 @@ export function TextElement({ element, isSelected }: TextElementProps) {
     </div>
   );
 }
+
+export const TextElement = React.memo(TextElementComponent);

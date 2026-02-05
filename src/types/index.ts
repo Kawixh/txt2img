@@ -17,8 +17,10 @@ export interface TextElement {
   y: number;
   fontSize: number;
   fontFamily: string;
-  fontWeight: 'normal' | 'bold';
-  fontStyle: 'normal' | 'italic';
+  fontWeight: number;
+  fontStyle: 'normal' | 'italic' | 'oblique';
+  fontSlant?: number;
+  fontStretch?: number;
   textDecoration: {
     underline: boolean;
     overline: boolean;
@@ -133,7 +135,7 @@ export interface FontsState {
   fonts: GoogleFont[];
   popularFonts: GoogleFont[];
   searchQuery: string;
-  selectedCategory: GoogleFont['category'] | '';
+  selectedCategory: GoogleFont['category'] | 'variable' | '';
   isLoading: boolean;
   isLoadingFont: boolean;
   currentlyLoadingFont: string | null;

@@ -1,31 +1,35 @@
 'use client';
 
 import React from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Move, ToggleLeft, ToggleRight } from 'lucide-react';
-import { PositionPreset } from '@/types';
+import { ToggleLeft, ToggleRight } from 'lucide-react';
+import { PositionPreset, TextElement as TextElementType } from '@/types';
 import { getPresetGrid } from '@/lib/positioning';
 
 export function PositionControls() {
-  const { state, updateTextElement } = useApp();
-
-  const selectedElement = state.textElements.find(
-    (element) => element.id === state.selectedElementId,
-  );
+  const { updateTextElement } = useAppActions();
+  const canvasSettings = useAppStore((state) => state.canvasSettings);
+  const selectedElement = useAppStore((state) => {
+    if (!state.selectedElementId) return null;
+    return (
+      state.textElements.find((element) => element.id === state.selectedElementId) ||
+      null
+    );
+  });
 
   if (!selectedElement) {
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">
-        Select a text element to edit its position and size
+      <div className="text-muted-foreground rounded-2xl border border-dashed border-border/80 bg-muted/40 py-8 text-center text-sm">
+        Select a text element to edit its position and size.
       </div>
     );
   }
 
-  const updateSelectedElement = (updates: Partial<typeof selectedElement>) => {
+  const updateSelectedElement = (updates: Partial<TextElementType>) => {
     updateTextElement(selectedElement.id, updates);
   };
 
@@ -34,7 +38,6 @@ export function PositionControls() {
   const handlePresetChange = (preset: PositionPreset) => {
     updateSelectedElement({
       positionPreset: preset,
-      // Reset padding when changing presets (except manual)
       paddingX: preset === 'manual' ? selectedElement.paddingX : 0,
       paddingY: preset === 'manual' ? selectedElement.paddingY : 0,
     });
@@ -42,7 +45,6 @@ export function PositionControls() {
 
   return (
     <div className="space-y-6">
-      {/* Text Box Width */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Width: {selectedElement.width}px</Label>
@@ -69,7 +71,6 @@ export function PositionControls() {
         />
       </div>
 
-      {/* Word Wrap Toggle */}
       <div className="space-y-2">
         <Label>Word Wrap</Label>
         <Button
@@ -89,11 +90,9 @@ export function PositionControls() {
         </Button>
       </div>
 
-      {/* Position Presets */}
       <div className="space-y-2">
         <Label>Position Preset</Label>
         <div className="space-y-2">
-          {/* Manual Mode Toggle */}
           <Button
             variant={
               selectedElement.positionPreset === 'manual'
@@ -107,8 +106,7 @@ export function PositionControls() {
             Manual Positioning
           </Button>
 
-          {/* Position Grid */}
-          <div className="grid grid-cols-3 gap-1 rounded-lg border bg-gray-50 p-2">
+          <div className="grid grid-cols-3 gap-1 rounded-xl border border-border/70 bg-muted/40 p-2">
             {presetGrid.map((row) =>
               row.map((preset) => (
                 <Button
@@ -131,12 +129,10 @@ export function PositionControls() {
         </div>
       </div>
 
-      {/* Padding Controls - Only show when not in manual mode */}
       {selectedElement.positionPreset !== 'manual' && (
         <div className="space-y-4">
           <Label className="text-sm font-medium">Fine-tune Position</Label>
 
-          {/* Horizontal Padding */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs">
@@ -167,7 +163,6 @@ export function PositionControls() {
             />
           </div>
 
-          {/* Vertical Padding */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs">
@@ -200,12 +195,10 @@ export function PositionControls() {
         </div>
       )}
 
-      {/* Manual Position Controls - Only show in manual mode */}
       {selectedElement.positionPreset === 'manual' && (
         <div className="space-y-4">
           <Label className="text-sm font-medium">Manual Position</Label>
 
-          {/* X Position */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs">
@@ -219,20 +212,19 @@ export function PositionControls() {
                 }
                 className="h-6 w-16 text-xs"
                 min={0}
-                max={state.canvasSettings.width}
+                max={canvasSettings.width}
               />
             </div>
             <Slider
               value={[selectedElement.x]}
               onValueChange={([value]) => updateSelectedElement({ x: value })}
               min={0}
-              max={state.canvasSettings.width}
+              max={canvasSettings.width}
               step={5}
               className="w-full"
             />
           </div>
 
-          {/* Y Position */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs">
@@ -246,14 +238,14 @@ export function PositionControls() {
                 }
                 className="h-6 w-16 text-xs"
                 min={0}
-                max={state.canvasSettings.height}
+                max={canvasSettings.height}
               />
             </div>
             <Slider
               value={[selectedElement.y]}
               onValueChange={([value]) => updateSelectedElement({ y: value })}
               min={0}
-              max={state.canvasSettings.height}
+              max={canvasSettings.height}
               step={5}
               className="w-full"
             />

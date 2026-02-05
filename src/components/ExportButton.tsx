@@ -1,42 +1,37 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useApp } from '@/contexts/AppContext';
+import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { reliableExporter } from '@/lib/reliable-export';
 import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
 import posthog from 'posthog-js';
 
 export function ExportButton() {
-  const { state, setExportStatus, setError } = useApp();
+  const { setExportStatus, setError } = useAppActions();
+  const exportStatus = useAppStore((state) => state.exportStatus);
+  const textElements = useAppStore((state) => state.textElements);
+  const canvasSettings = useAppStore((state) => state.canvasSettings);
 
   const handleExport = async () => {
     try {
       setExportStatus('loading');
       setError(null);
 
-      console.log('🎨 Starting reliable html-to-image export...');
-
-      // Get unique font families used in text elements
       const fontFamilies = [
-        ...new Set(state.textElements.map((el) => el.fontFamily)),
+        ...new Set(textElements.map((el) => el.fontFamily)),
       ];
-      console.log('Font families to ensure:', fontFamilies);
 
-      // Use reliable exporter that handles fonts properly
       const dataUrl = await reliableExporter.exportElementToPng(
         'text-canvas',
         {
-          width: state.canvasSettings.width,
-          height: state.canvasSettings.height,
+          width: canvasSettings.width,
+          height: canvasSettings.height,
           pixelRatio: 2,
           quality: 1.0,
         },
         fontFamilies,
       );
 
-      console.log('✅ Reliable export completed successfully');
-
-      // Download the image
       reliableExporter.downloadImage(dataUrl, `text-image-${Date.now()}.png`);
 
       posthog.capture('image-exported');
@@ -57,7 +52,7 @@ export function ExportButton() {
   };
 
   const getButtonContent = () => {
-    switch (state.exportStatus) {
+    switch (exportStatus) {
       case 'loading':
         return (
           <>
@@ -90,7 +85,7 @@ export function ExportButton() {
   };
 
   const getButtonVariant = () => {
-    switch (state.exportStatus) {
+    switch (exportStatus) {
       case 'success':
         return 'default';
       case 'error':
@@ -100,8 +95,7 @@ export function ExportButton() {
     }
   };
 
-  const isDisabled =
-    state.exportStatus === 'loading' || state.textElements.length === 0;
+  const isDisabled = exportStatus === 'loading' || textElements.length === 0;
 
   return (
     <Button

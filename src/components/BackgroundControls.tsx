@@ -11,14 +11,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { useApp } from '@/contexts/AppContext';
+import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { PATTERN_DEFINITIONS, getPatternById } from '@/lib/patterns';
 import { BackgroundType } from '@/types';
-// Removed unused imports and constants
 
 export function BackgroundControls() {
-  const { state, updateBackground, updateCanvasSettings } = useApp();
-  const { background, borderRadius } = state.canvasSettings;
+  const { updateBackground, updateCanvasSettings } = useAppActions();
+  const canvasSettings = useAppStore((state) => state.canvasSettings);
+  const { background, borderRadius } = canvasSettings;
 
   const handleBackgroundTypeChange = (type: BackgroundType) => {
     switch (type) {
@@ -28,24 +28,19 @@ export function BackgroundControls() {
       case 'transparent':
         updateBackground({ type: 'transparent' });
         break;
-      case 'gradient':
-        updateBackground({
-          type: 'gradient',
-          direction: 'to-r',
-          from: '#3b82f6',
-          to: '#8b5cf6',
-        });
-        break;
       case 'pattern':
         updateBackground({
           type: 'pattern',
           patternId: 'dots',
-          primaryColor: '#333333',
+          primaryColor: '#0f172a',
           backgroundColor: '#ffffff',
-          opacity: 1,
-          size: 20,
-          spacing: 10,
+          opacity: 0.2,
+          size: 18,
+          spacing: 8,
         });
+        break;
+      case 'gradient':
+        updateBackground({ type: 'solid', color: '#ffffff' });
         break;
     }
   };
@@ -53,6 +48,7 @@ export function BackgroundControls() {
   const renderBackgroundOptions = () => {
     switch (background.type) {
       case 'solid':
+      case 'gradient':
         return (
           <div className="space-y-2">
             <Label htmlFor="bg-color">Background Color</Label>
@@ -60,16 +56,16 @@ export function BackgroundControls() {
               <Input
                 id="bg-color"
                 type="color"
-                value={background.color}
+                value={'color' in background ? background.color : '#ffffff'}
                 onChange={(e) =>
-                  updateBackground({ ...background, color: e.target.value })
+                  updateBackground({ type: 'solid', color: e.target.value })
                 }
                 className="h-10 w-12 rounded border p-1"
               />
               <Input
-                value={background.color}
+                value={'color' in background ? background.color : '#ffffff'}
                 onChange={(e) =>
-                  updateBackground({ ...background, color: e.target.value })
+                  updateBackground({ type: 'solid', color: e.target.value })
                 }
                 placeholder="#ffffff"
                 className="flex-1"
@@ -78,64 +74,7 @@ export function BackgroundControls() {
           </div>
         );
 
-      case 'gradient':
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Glow Style</Label>
-              <p className="text-sm text-muted-foreground">This creates a solid color with a subtle glow effect instead of a gradient.</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="gradient-from">Primary Color</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="gradient-from"
-                  type="color"
-                  value={background.from}
-                  onChange={(e) =>
-                    updateBackground({ ...background, from: e.target.value })
-                  }
-                  className="h-10 w-12 rounded border p-1"
-                />
-                <Input
-                  value={background.from}
-                  onChange={(e) =>
-                    updateBackground({ ...background, from: e.target.value })
-                  }
-                  placeholder="#3b82f6"
-                  className="flex-1"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="gradient-to">Glow Color</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="gradient-to"
-                  type="color"
-                  value={background.to}
-                  onChange={(e) =>
-                    updateBackground({ ...background, to: e.target.value })
-                  }
-                  className="h-10 w-12 rounded border p-1"
-                />
-                <Input
-                  value={background.to}
-                  onChange={(e) =>
-                    updateBackground({ ...background, to: e.target.value })
-                  }
-                  placeholder="#8b5cf6"
-                  className="flex-1"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">This color will be used for the glow effect around the primary color.</p>
-            </div>
-          </div>
-        );
-
-      case 'pattern':
+      case 'pattern': {
         const selectedPattern = getPatternById(background.patternId);
         return (
           <div className="space-y-4">
@@ -147,10 +86,9 @@ export function BackgroundControls() {
                   updateBackground({
                     ...background,
                     patternId: value,
-                    // Reset to defaults when pattern changes
-                    opacity: 1,
-                    size: 20,
-                    spacing: 10,
+                    opacity: 0.2,
+                    size: 18,
+                    spacing: 8,
                   })
                 }
               >
@@ -162,7 +100,7 @@ export function BackgroundControls() {
                     <SelectItem key={pattern.id} value={pattern.id}>
                       <div className="flex flex-col">
                         <span>{pattern.name}</span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {pattern.description}
                         </span>
                       </div>
@@ -224,7 +162,7 @@ export function BackgroundControls() {
                       primaryColor: e.target.value,
                     })
                   }
-                  placeholder="#333333"
+                  placeholder="#0f172a"
                   className="flex-1"
                 />
               </div>
@@ -238,9 +176,9 @@ export function BackgroundControls() {
                   onValueChange={([value]) =>
                     updateBackground({ ...background, opacity: value })
                   }
-                  min={0.1}
+                  min={0.05}
                   max={1}
-                  step={0.1}
+                  step={0.05}
                   className="w-full"
                 />
               </div>
@@ -254,9 +192,9 @@ export function BackgroundControls() {
                   onValueChange={([value]) =>
                     updateBackground({ ...background, size: value })
                   }
-                  min={5}
-                  max={100}
-                  step={5}
+                  min={6}
+                  max={120}
+                  step={2}
                   className="w-full"
                 />
               </div>
@@ -279,6 +217,14 @@ export function BackgroundControls() {
             )}
           </div>
         );
+      }
+
+      case 'transparent':
+        return (
+          <div className="rounded-lg border border-dashed border-border/80 bg-muted/40 p-4 text-sm text-muted-foreground">
+            Transparency shows a subtle checkerboard behind the canvas.
+          </div>
+        );
 
       default:
         return null;
@@ -287,10 +233,9 @@ export function BackgroundControls() {
 
   return (
     <div className="space-y-6">
-      {/* Background Type */}
       <div className="space-y-2">
         <Label>Background Type</Label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button
             variant={background.type === 'solid' ? 'default' : 'outline'}
             size="sm"
@@ -306,13 +251,6 @@ export function BackgroundControls() {
             Transparent
           </Button>
           <Button
-            variant={background.type === 'gradient' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleBackgroundTypeChange('gradient')}
-          >
-            Glow
-          </Button>
-          <Button
             variant={background.type === 'pattern' ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleBackgroundTypeChange('pattern')}
@@ -322,25 +260,20 @@ export function BackgroundControls() {
         </div>
       </div>
 
-      {/* Background Options */}
       {renderBackgroundOptions()}
 
-      {/* Border Radius */}
       <div className="space-y-2">
         <Label>Border Radius: {borderRadius}px</Label>
         <Slider
           value={[borderRadius]}
-          onValueChange={([value]) =>
-            updateCanvasSettings({ borderRadius: value })
-          }
+          onValueChange={([value]) => updateCanvasSettings({ borderRadius: value })}
           min={0}
-          max={50}
+          max={60}
           step={1}
           className="w-full"
         />
       </div>
 
-      {/* Canvas Size */}
       <div className="space-y-4">
         <Label>Canvas Size</Label>
         <div className="grid grid-cols-2 gap-2">
@@ -351,7 +284,7 @@ export function BackgroundControls() {
             <Input
               id="canvas-width"
               type="number"
-              value={state.canvasSettings.width}
+              value={canvasSettings.width}
               onChange={(e) =>
                 updateCanvasSettings({
                   width: parseInt(e.target.value) || 800,
@@ -368,7 +301,7 @@ export function BackgroundControls() {
             <Input
               id="canvas-height"
               type="number"
-              value={state.canvasSettings.height}
+              value={canvasSettings.height}
               onChange={(e) =>
                 updateCanvasSettings({
                   height: parseInt(e.target.value) || 600,

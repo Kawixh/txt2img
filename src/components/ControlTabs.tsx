@@ -1,10 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Move, Palette, Plus, Type } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { BackgroundControls } from './BackgroundControls';
 import { FontControls } from './FontControls';
 import { PositionControls } from './PositionControls';
@@ -15,8 +13,8 @@ type TabId = 'content' | 'styling' | 'layout' | 'background';
 interface Tab {
   id: TabId;
   label: string;
-  icon: React.ReactNode;
-  component: React.ReactNode;
+  icon: ReactNode;
+  component: ReactNode;
 }
 
 export function ControlTabs() {
@@ -51,63 +49,30 @@ export function ControlTabs() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Tab Navigation */}
-      <div className="glass-panel border-border/20 grid grid-cols-4 gap-2 border-0 border-b p-3">
-        {tabs.map((tab, index) => (
-          <motion.div
-            key={tab.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
+      <div className="border-b border-border/70 p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          Controls
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {tabs.map((tab) => (
             <Button
-              variant={activeTab === tab.id ? 'solid' : 'glass'}
+              key={tab.id}
+              variant={activeTab === tab.id ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab(tab.id)}
-              className="group relative flex h-16 flex-col gap-2 text-xs"
+              className="flex items-center justify-start gap-2"
             >
-              <motion.div
-                animate={{
-                  scale: activeTab === tab.id ? 1.1 : 1,
-                  rotate: activeTab === tab.id ? [0, -5, 5, 0] : 0,
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                {tab.icon}
-              </motion.div>
-              <span className="word-wrap hidden font-medium sm:block">
-                {tab.label}
-              </span>
-              {activeTab === tab.id && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute inset-0 rounded-xl"
-                  initial={false}
-                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                />
-              )}
+              {tab.icon}
+              <span className="text-xs font-medium">{tab.label}</span>
             </Button>
-          </motion.div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="container-safe max-h-[calc(100vh-12rem)] flex-1 overflow-y-auto p-4">
-        <Card className="glass-panel rounded-2xl border-0 shadow-none">
-          <CardContent className="p-4">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {tabs.find((tab) => tab.id === activeTab)?.component}
-              </motion.div>
-            </AnimatePresence>
-          </CardContent>
-        </Card>
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-[var(--panel-shadow-soft)]">
+          {tabs.find((tab) => tab.id === activeTab)?.component}
+        </div>
       </div>
     </div>
   );

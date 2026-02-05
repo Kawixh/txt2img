@@ -1,5 +1,84 @@
-import { FontSearchOptions, GoogleFontsResponse } from '@/lib/google-fonts';
+import { FontSearchOptions, GoogleFontsResponse, GoogleFont } from '@/lib/google-fonts';
 import { NextRequest, NextResponse } from 'next/server';
+
+const METADATA_URL = 'https://fonts.google.com/metadata/fonts';
+const METADATA_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+let metadataCache:
+  | {
+      timestamp: number;
+      axesByFamily: Map<string, GoogleFont['axes']>;
+    }
+  | null = null;
+
+async function getAxesByFamily(): Promise<Map<string, GoogleFont['axes']>> {
+  if (
+    metadataCache &&
+    Date.now() - metadataCache.timestamp < METADATA_CACHE_TTL
+  ) {
+    return metadataCache.axesByFamily;
+  }
+
+  const response = await fetch(METADATA_URL, {
+    headers: { Accept: 'text/plain' },
+    next: { revalidate: 86400 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch metadata: ${response.statusText}`);
+  }
+
+  const text = await response.text();
+  const cleaned = text.replace(/^\)\]\}'\s*/, '');
+  const data = JSON.parse(cleaned);
+
+  const list =
+    data.familyMetadataList ||
+    data.familyMetadata ||
+    data.fonts ||
+    data.items ||
+    [];
+
+  const axesByFamily = new Map<string, GoogleFont['axes']>();
+
+  list.forEach((font: any) => {
+    const family = font.family || font.name;
+    const axesSource = font.axes || font.axis || font.variations || [];
+    if (!family || !Array.isArray(axesSource) || axesSource.length === 0) return;
+
+    const axes = axesSource
+      .map((axis: any) => {
+        const tag = axis.tag || axis.axisTag || axis.name || axis.tagName;
+        const min = axis.min ?? axis.minValue ?? axis.start ?? axis.minValue;
+        const max = axis.max ?? axis.maxValue ?? axis.end ?? axis.maxValue;
+        const defaultValue =
+          axis.defaultValue ?? axis.default ?? axis.defaultValue ?? axis.value;
+
+        if (typeof tag !== 'string') return null;
+
+        const minValue = Number(min);
+        const maxValue = Number(max);
+        const defaultParsed = Number(defaultValue ?? min);
+
+        if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) return null;
+
+        return {
+          tag,
+          min: minValue,
+          max: maxValue,
+          defaultValue: Number.isFinite(defaultParsed) ? defaultParsed : minValue,
+        };
+      })
+      .filter(Boolean) as GoogleFont['axes'];
+
+    if (axes.length > 0) {
+      axesByFamily.set(family, axes);
+    }
+  });
+
+  metadataCache = { timestamp: Date.now(), axesByFamily };
+  return axesByFamily;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,8 +138,20 @@ export async function POST(request: NextRequest) {
 
     const data: GoogleFontsResponse = await response.json();
 
+    let axesByFamily: Map<string, GoogleFont['axes']> | null = null;
+    try {
+      axesByFamily = await getAxesByFamily();
+    } catch (error) {
+      console.warn('Failed to enrich fonts with axis metadata:', error);
+    }
+
+    const items = (data.items || []).map((font) => {
+      const axes = axesByFamily?.get(font.family);
+      return axes ? { ...font, axes } : font;
+    });
+
     // Return the fonts data
-    return NextResponse.json(data);
+    return NextResponse.json({ ...data, items });
   } catch (error) {
     console.error('Error in fonts API route:', error);
 

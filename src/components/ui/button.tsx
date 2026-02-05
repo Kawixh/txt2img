@@ -4,31 +4,27 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-bounce disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 relative overflow-hidden group active:scale-95",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
   {
     variants: {
       variant: {
-        default:
-          'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-500/50 transform hover:-translate-y-0.5 animate-glow',
+        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
         destructive:
-          'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-0.5 hover:animate-glow',
+          'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
         outline:
-          'border-2 border-border/50 bg-background/50 backdrop-blur-sm hover:bg-accent/50 hover:text-accent-foreground hover:border-purple-500/50 hover:shadow-md transform hover:-translate-y-0.5',
+          'border border-border bg-transparent text-foreground hover:bg-muted',
         secondary:
-          'bg-secondary/80 text-secondary-foreground hover:bg-secondary hover:shadow-md transform hover:-translate-y-0.5',
-        ghost:
-          'hover:bg-accent/50 hover:text-accent-foreground rounded-xl hover:shadow-sm transform hover:-translate-y-0.5',
-        link: 'text-purple-600 underline-offset-4 hover:underline hover:text-purple-700',
-        solid:
-          'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/50 transform hover:-translate-y-0.5 hover:animate-glow',
-        glass:
-          'glass-panel text-foreground hover:bg-white/10 dark:hover:bg-black/10 transform hover:-translate-y-0.5 hover:shadow-lg',
+          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        ghost: 'text-foreground hover:bg-muted',
+        link: 'text-primary underline-offset-4 hover:underline',
+        solid: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+        glass: 'border border-border bg-card/80 text-foreground hover:bg-card',
       },
       size: {
-        default: 'h-10 px-6 py-2 has-[>svg]:px-4',
-        sm: 'h-8 rounded-lg gap-1.5 px-4 has-[>svg]:px-3 text-xs',
-        lg: 'h-12 rounded-xl px-8 has-[>svg]:px-6 text-base font-semibold',
-        icon: 'size-10 rounded-xl',
+        default: 'h-10 px-4 py-2 has-[>svg]:px-3',
+        sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-xs',
+        lg: 'h-12 rounded-xl px-6 has-[>svg]:px-5 text-base font-semibold',
+        icon: 'size-10 rounded-lg',
       },
     },
     defaultVariants: {

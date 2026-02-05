@@ -3,12 +3,14 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useApp } from '@/contexts/AppContext';
+import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { Plus } from 'lucide-react';
 import React, { useState } from 'react';
 
 export function TextInput() {
-  const { addTextElement, state } = useApp();
+  const { addTextElement } = useAppActions();
+  const isLoading = useAppStore((state) => state.isLoading);
+  const textCount = useAppStore((state) => state.textElements.length);
   const [inputText, setInputText] = useState('');
 
   const handleAddText = () => {
@@ -32,23 +34,23 @@ export function TextInput() {
           id="text-input"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyPress}
           placeholder="Enter your text here..."
-          disabled={state.isLoading}
+          disabled={isLoading}
         />
       </div>
       <Button
         onClick={handleAddText}
-        disabled={!inputText.trim() || state.isLoading}
+        disabled={!inputText.trim() || isLoading}
         className="w-full"
       >
         <Plus size={16} className="mr-2" />
-        Add Text Element
+        Add Text Layer
       </Button>
 
-      {state.textElements.length > 0 && (
+      {textCount > 0 && (
         <div className="text-muted-foreground text-sm">
-          {state.textElements.length} text element(s) on canvas
+          {textCount} layer{textCount > 1 ? 's' : ''} on canvas
         </div>
       )}
     </div>

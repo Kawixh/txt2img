@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 export interface PatternDefinition {
   id: string;
   name: string;
@@ -24,23 +26,27 @@ export interface PatternDefinition {
     opacity: number;
     size: number;
     spacing: number;
-  }) => React.CSSProperties;
+  }) => CSSProperties;
 }
+
+const toDataUri = (svg: string) =>
+  `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
+const getStroke = (size: number) => Math.max(1, Math.round(size / 10));
 
 export const PATTERN_DEFINITIONS: PatternDefinition[] = [
   {
     id: 'diagonal-grid',
     name: 'Diagonal Grid',
-    description: 'Complex diagonal grid pattern with intersecting lines',
+    description: 'Interlaced diagonal lines for directional structure',
     category: 'geometric',
     cssProperties: {
-      backgroundColor: '#e5e5f7',
-      backgroundImage:
-        'linear-gradient(135deg, #444cf7 25%, transparent 25%), linear-gradient(225deg, #444cf7 25%, transparent 25%), linear-gradient(45deg, #444cf7 25%, transparent 25%), linear-gradient(315deg, #444cf7 25%, #e5e5f7 25%)',
-      backgroundPosition: '10px 0, 10px 0, 0 0, 0 0',
-      backgroundSize: '10px 10px',
-      backgroundRepeat: 'repeat',
-      opacity: 0.8,
+      backgroundColor: '#ffffff',
+      backgroundImage: '',
+      backgroundSize: '24px 24px',
     },
     customizableParams: {
       primaryColor: true,
@@ -49,47 +55,30 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       size: true,
       spacing: true,
     },
-    generateCSS: ({
-      primaryColor,
-      backgroundColor,
-      opacity,
-      size,
-      spacing,
-    }) => {
-      const adjustedSize = `${size}px ${size}px`;
-      const adjustedSpacing = `${spacing}px 0, ${spacing}px 0, 0 0, 0 0`;
-
-      // Convert opacity to alpha channel in colors instead of using opacity property
-      const primaryColorWithOpacity = `${primaryColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
-      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
+    generateCSS: ({ primaryColor, backgroundColor, opacity, size, spacing }) => {
+      const tile = Math.max(8, size + spacing);
+      const stroke = getStroke(tile);
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${tile}' height='${tile}' viewBox='0 0 ${tile} ${tile}'>
+        <line x1='0' y1='0' x2='${tile}' y2='${tile}' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' />
+        <line x1='${tile}' y1='0' x2='0' y2='${tile}' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' />
+      </svg>`;
 
       return {
-        backgroundColor: backgroundColorWithOpacity,
-        backgroundImage: `linear-gradient(135deg, ${primaryColorWithOpacity} 25%, transparent 25%), linear-gradient(225deg, ${primaryColorWithOpacity} 25%, transparent 25%), linear-gradient(45deg, ${primaryColorWithOpacity} 25%, transparent 25%), linear-gradient(315deg, ${primaryColorWithOpacity} 25%, ${backgroundColorWithOpacity} 25%)`,
-        backgroundPosition: adjustedSpacing,
-        backgroundSize: adjustedSize,
-        backgroundRepeat: 'repeat',
+        backgroundColor,
+        backgroundImage: toDataUri(svg),
+        backgroundSize: `${tile}px ${tile}px`,
       };
     },
   },
   {
     id: 'dots',
     name: 'Polka Dots',
-    description: 'Classic dotted pattern',
+    description: 'Soft dotted rhythm for subtle texture',
     category: 'geometric',
     cssProperties: {
       backgroundColor: '#ffffff',
-      backgroundImage: 'radial-gradient(circle, #333333 1px, transparent 1px)',
+      backgroundImage: '',
       backgroundSize: '20px 20px',
-      opacity: 1,
     },
     customizableParams: {
       primaryColor: true,
@@ -99,35 +88,28 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       spacing: false,
     },
     generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
-      const primaryColorWithOpacity = `${primaryColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
-      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
+      const tile = Math.max(6, size);
+      const radius = clamp(Math.round(tile / 8), 1, tile / 2);
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${tile}' height='${tile}' viewBox='0 0 ${tile} ${tile}'>
+        <circle cx='${tile / 2}' cy='${tile / 2}' r='${radius}' fill='${primaryColor}' fill-opacity='${opacity}' />
+      </svg>`;
 
       return {
-        backgroundColor: backgroundColorWithOpacity,
-        backgroundImage: `radial-gradient(circle, ${primaryColorWithOpacity} 1px, transparent 1px)`,
-        backgroundSize: `${size}px ${size}px`,
+        backgroundColor,
+        backgroundImage: toDataUri(svg),
+        backgroundSize: `${tile}px ${tile}px`,
       };
     },
   },
   {
     id: 'grid',
     name: 'Grid',
-    description: 'Simple grid lines pattern',
+    description: 'Clean grid lines for alignment',
     category: 'geometric',
     cssProperties: {
       backgroundColor: '#ffffff',
-      backgroundImage:
-        'linear-gradient(#333333 1px, transparent 1px), linear-gradient(90deg, #333333 1px, transparent 1px)',
-      backgroundSize: '20px 20px',
-      opacity: 1,
+      backgroundImage: '',
+      backgroundSize: '24px 24px',
     },
     customizableParams: {
       primaryColor: true,
@@ -137,35 +119,28 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       spacing: false,
     },
     generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
-      const primaryColorWithOpacity = `${primaryColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
-      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
+      const tile = Math.max(8, size);
+      const stroke = getStroke(tile);
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${tile}' height='${tile}' viewBox='0 0 ${tile} ${tile}'>
+        <path d='M ${stroke / 2} 0 V ${tile} M 0 ${stroke / 2} H ${tile}' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' fill='none' />
+      </svg>`;
 
       return {
-        backgroundColor: backgroundColorWithOpacity,
-        backgroundImage: `linear-gradient(${primaryColorWithOpacity} 1px, transparent 1px), linear-gradient(90deg, ${primaryColorWithOpacity} 1px, transparent 1px)`,
-        backgroundSize: `${size}px ${size}px`,
+        backgroundColor,
+        backgroundImage: toDataUri(svg),
+        backgroundSize: `${tile}px ${tile}px`,
       };
     },
   },
   {
     id: 'stripes',
     name: 'Diagonal Stripes',
-    description: 'Diagonal striped pattern',
+    description: 'Dynamic slanted stripes',
     category: 'geometric',
     cssProperties: {
       backgroundColor: '#ffffff',
-      backgroundImage:
-        'linear-gradient(45deg, #333333 25%, transparent 25%, transparent 75%, #333333 75%)',
-      backgroundSize: '20px 20px',
-      opacity: 1,
+      backgroundImage: '',
+      backgroundSize: '24px 24px',
     },
     customizableParams: {
       primaryColor: true,
@@ -175,35 +150,29 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       spacing: false,
     },
     generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
-      const primaryColorWithOpacity = `${primaryColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
-      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
+      const tile = Math.max(10, size);
+      const stroke = Math.max(2, Math.round(tile / 5));
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${tile}' height='${tile}' viewBox='0 0 ${tile} ${tile}'>
+        <line x1='-${tile}' y1='${tile}' x2='${tile}' y2='-${tile}' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' />
+        <line x1='0' y1='${tile}' x2='${tile * 2}' y2='-${tile}' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' />
+      </svg>`;
 
       return {
-        backgroundColor: backgroundColorWithOpacity,
-        backgroundImage: `linear-gradient(45deg, ${primaryColorWithOpacity} 25%, transparent 25%, transparent 75%, ${primaryColorWithOpacity} 75%)`,
-        backgroundSize: `${size}px ${size}px`,
+        backgroundColor,
+        backgroundImage: toDataUri(svg),
+        backgroundSize: `${tile}px ${tile}px`,
       };
     },
   },
   {
     id: 'zigzag',
     name: 'Zigzag',
-    description: 'Zigzag chevron pattern',
+    description: 'Playful zigzag motion',
     category: 'geometric',
     cssProperties: {
       backgroundColor: '#ffffff',
-      backgroundImage:
-        'linear-gradient(135deg, #333333 25%, transparent 25%, transparent 50%, #333333 50%, #333333 75%, transparent 75%)',
-      backgroundSize: '20px 20px',
-      opacity: 1,
+      backgroundImage: '',
+      backgroundSize: '28px 28px',
     },
     customizableParams: {
       primaryColor: true,
@@ -213,36 +182,33 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       spacing: false,
     },
     generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
-      const primaryColorWithOpacity = `${primaryColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
-      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
+      const tile = Math.max(12, size);
+      const stroke = getStroke(tile);
+      const points = `0 ${tile / 2} ${tile / 4} 0 ${tile / 2} ${tile / 2} ${
+        (tile * 3) / 4
+      } 0 ${tile} ${tile / 2} ${
+        (tile * 3) / 4
+      } ${tile} ${tile / 2} ${tile / 2} ${tile / 4} ${tile} 0 ${tile / 2}`;
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${tile}' height='${tile}' viewBox='0 0 ${tile} ${tile}'>
+        <polyline points='${points}' fill='none' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' stroke-linejoin='round' stroke-linecap='round' />
+      </svg>`;
 
       return {
-        backgroundColor: backgroundColorWithOpacity,
-        backgroundImage: `linear-gradient(135deg, ${primaryColorWithOpacity} 25%, transparent 25%, transparent 50%, ${primaryColorWithOpacity} 50%, ${primaryColorWithOpacity} 75%, transparent 75%)`,
-        backgroundSize: `${size}px ${size}px`,
+        backgroundColor,
+        backgroundImage: toDataUri(svg),
+        backgroundSize: `${tile}px ${tile}px`,
       };
     },
   },
   {
     id: 'hexagons',
     name: 'Hexagons',
-    description: 'Hexagonal honeycomb pattern',
+    description: 'Honeycomb geometry',
     category: 'geometric',
     cssProperties: {
       backgroundColor: '#ffffff',
-      backgroundImage:
-        'radial-gradient(circle farthest-side at 0% 50%, transparent 23.5%, #333333 0 24.5%, transparent 0), radial-gradient(circle farthest-side at 50% 35%, transparent 23.5%, #333333 0 24.5%, transparent 0)',
-      backgroundSize: '40px 60px',
-      backgroundPosition: '0 0, 20px 30px',
-      opacity: 1,
+      backgroundImage: '',
+      backgroundSize: '40px 36px',
     },
     customizableParams: {
       primaryColor: true,
@@ -252,40 +218,32 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       spacing: false,
     },
     generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
-      const hexSize = `${size * 2}px ${size * 3}px`;
-      const hexPosition = `0 0, ${size}px ${size * 1.5}px`;
-
-      const primaryColorWithOpacity = `${primaryColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
-      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
+      const width = Math.max(24, size * 2);
+      const height = Math.max(20, Math.round(size * 1.7));
+      const stroke = getStroke(size);
+      const points = `${width * 0.25},0 ${width * 0.75},0 ${width},${
+        height / 2
+      } ${width * 0.75},${height} ${width * 0.25},${height} 0,${height / 2}`;
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>
+        <polygon points='${points}' fill='none' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' />
+      </svg>`;
 
       return {
-        backgroundColor: backgroundColorWithOpacity,
-        backgroundImage: `radial-gradient(circle farthest-side at 0% 50%, transparent 23.5%, ${primaryColorWithOpacity} 0 24.5%, transparent 0), radial-gradient(circle farthest-side at 50% 35%, transparent 23.5%, ${primaryColorWithOpacity} 0 24.5%, transparent 0)`,
-        backgroundSize: hexSize,
-        backgroundPosition: hexPosition,
+        backgroundColor,
+        backgroundImage: toDataUri(svg),
+        backgroundSize: `${width}px ${height}px`,
       };
     },
   },
   {
     id: 'triangles',
     name: 'Triangles',
-    description: 'Triangular tessellation pattern',
+    description: 'Angular tessellation pattern',
     category: 'geometric',
     cssProperties: {
       backgroundColor: '#ffffff',
-      backgroundImage:
-        'linear-gradient(60deg, #333333 25%, transparent 25%, transparent 75%, #333333 75%), linear-gradient(-60deg, #333333 25%, transparent 25%, transparent 75%, #333333 75%)',
-      backgroundSize: '30px 52px',
-      backgroundPosition: '0 0, 15px 26px',
-      opacity: 1,
+      backgroundImage: '',
+      backgroundSize: '32px 28px',
     },
     customizableParams: {
       primaryColor: true,
@@ -295,25 +253,18 @@ export const PATTERN_DEFINITIONS: PatternDefinition[] = [
       spacing: false,
     },
     generateCSS: ({ primaryColor, backgroundColor, opacity, size }) => {
-      const triSize = `${size * 1.5}px ${size * 2.6}px`;
-      const triPosition = `0 0, ${size * 0.75}px ${size * 1.3}px`;
-
-      const primaryColorWithOpacity = `${primaryColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
-      const backgroundColorWithOpacity = `${backgroundColor}${Math.round(
-        opacity * 255,
-      )
-        .toString(16)
-        .padStart(2, '0')}`;
+      const width = Math.max(16, size * 1.6);
+      const height = Math.max(14, Math.round(size * 1.4));
+      const stroke = getStroke(size);
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>
+        <polygon points='0,${height} ${width / 2},0 ${width},${height}' fill='none' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' />
+        <polygon points='0,0 ${width / 2},${height} ${width},0' fill='none' stroke='${primaryColor}' stroke-width='${stroke}' stroke-opacity='${opacity}' />
+      </svg>`;
 
       return {
-        backgroundColor: backgroundColorWithOpacity,
-        backgroundImage: `linear-gradient(60deg, ${primaryColorWithOpacity} 25%, transparent 25%, transparent 75%, ${primaryColorWithOpacity} 75%), linear-gradient(-60deg, ${primaryColorWithOpacity} 25%, transparent 25%, transparent 75%, ${primaryColorWithOpacity} 75%)`,
-        backgroundSize: triSize,
-        backgroundPosition: triPosition,
+        backgroundColor,
+        backgroundImage: toDataUri(svg),
+        backgroundSize: `${width}px ${height}px`,
       };
     },
   },

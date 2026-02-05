@@ -87,9 +87,9 @@ class CanvasExporter {
         break;
 
       case 'gradient':
-        console.log('Rendering gradient as solid with glow effect');
+        console.log('Rendering gradient as solid color');
         await this.renderSolidWithGlow(background);
-        console.log('Solid background with glow rendered');
+        console.log('Solid background rendered');
         break;
 
       case 'pattern':
@@ -112,52 +112,20 @@ class CanvasExporter {
   }
 
   /**
-   * Renders solid background with glow effect (replaces gradient)
+   * Renders solid background for gradient fallback
    */
   private async renderSolidWithGlow(
     gradient: BackgroundConfig & { type: 'gradient' },
   ): Promise<void> {
     if (!this.ctx || !this.canvas) return;
 
-    console.log(`Solid with glow details:`, {
+    console.log(`Solid background details:`, {
       primaryColor: gradient.from,
-      secondaryColor: gradient.to,
     });
 
-    // Use the primary color as the base
     this.ctx.fillStyle = gradient.from;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    
-    // Create a subtle glow effect by overlaying a radial gradient
-    const centerX = this.canvas.width / 2;
-    const centerY = this.canvas.height / 2;
-    const radius = Math.max(this.canvas.width, this.canvas.height) * 0.7;
-    
-    const glowGradient = this.ctx.createRadialGradient(
-      centerX, centerY, 0,
-      centerX, centerY, radius
-    );
-    
-    // Convert hex colors to rgba for proper canvas rendering
-    const fromRgba = hexToRgba(gradient.from, 0.25);
-    const toRgba = hexToRgba(gradient.to, 0.125);
-    
-    glowGradient.addColorStop(0, fromRgba);
-    glowGradient.addColorStop(0.5, toRgba);
-    glowGradient.addColorStop(1, 'transparent');
-    
-    // Apply additional shadow for better glow effect
-    this.ctx.shadowBlur = 20;
-    this.ctx.shadowColor = gradient.to;
-    
-    this.ctx.fillStyle = glowGradient;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    
-    // Reset shadow after glow effect
-    this.ctx.shadowBlur = 0;
-    this.ctx.shadowColor = 'transparent';
-    
-    console.log('Solid background with glow effect applied to canvas');
+    console.log('Solid background applied to canvas');
   }
 
   /**
@@ -203,8 +171,11 @@ class CanvasExporter {
     this.ctx.save();
 
     // Set font properties FIRST (needed for accurate text measurement in wrapText)
-    const fontWeight = element.fontWeight === 'bold' ? 'bold' : 'normal';
-    const fontStyle = element.fontStyle === 'italic' ? 'italic' : 'normal';
+    const fontWeight = element.fontWeight ?? 400;
+    const fontStyle =
+      element.fontStyle === 'oblique'
+        ? `oblique ${element.fontSlant ?? 0}deg`
+        : element.fontStyle;
     const fontString = `${fontStyle} ${fontWeight} ${element.fontSize}px "${element.fontFamily}", Arial, sans-serif`;
     this.ctx.font = fontString;
 

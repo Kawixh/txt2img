@@ -1,14 +1,31 @@
 'use client';
 
-import { useApp } from '@/contexts/AppContext';
+import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { getPatternById } from '@/lib/patterns';
 import { BackgroundConfig } from '@/types';
 import React, { useRef } from 'react';
 import { TextElement } from './TextElement';
 
+const shallowArrayEqual = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
+const checkerboardSvg = encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>
+    <rect width='24' height='24' fill='white'/>
+    <rect width='12' height='12' fill='#f0f0f0'/>
+    <rect x='12' y='12' width='12' height='12' fill='#f0f0f0'/>
+  </svg>`,
+);
+
 export function TextCanvas() {
-  const { state, selectElement } = useApp();
+  const { selectElement } = useAppActions();
   const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasSettings = useAppStore((state) => state.canvasSettings);
+  const textElementIds = useAppStore(
+    (state) => state.textElements.map((element) => element.id),
+    shallowArrayEqual,
+  );
+  const hasElements = textElementIds.length > 0;
 
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (e.target === canvasRef.current) {
@@ -25,19 +42,15 @@ export function TextCanvas() {
 
       case 'transparent':
         return {
-          backgroundColor: 'transparent',
-          backgroundImage: 'radial-gradient(circle at 25% 25%, #f0f0f0 2px, transparent 2px), radial-gradient(circle at 75% 75%, #f0f0f0 2px, transparent 2px)',
-          backgroundSize: '20px 20px',
-          backgroundPosition: '0 0, 10px 10px',
+          backgroundColor: '#ffffff',
+          backgroundImage: `url("data:image/svg+xml,${checkerboardSvg}")`,
+          backgroundSize: '24px 24px',
         };
 
       case 'gradient':
-        // Convert gradient to solid color with glow effect
-        const primaryColor = background.from;
         return {
-          backgroundColor: primaryColor,
-          boxShadow: `0 0 20px ${primaryColor}40, inset 0 0 20px ${primaryColor}20`,
-          filter: 'brightness(1.1)',
+          backgroundColor: background.from,
+          boxShadow: `0 0 0 1px rgba(0,0,0,0.04)`
         };
 
       case 'pattern':
@@ -54,14 +67,12 @@ export function TextCanvas() {
     const { patternId, primaryColor, backgroundColor, opacity, size, spacing } =
       pattern;
 
-    // Import pattern definition
     const patternDef = getPatternById(patternId);
 
     if (!patternDef) {
       return { backgroundColor };
     }
 
-    // Generate CSS using the pattern's generateCSS function
     return patternDef.generateCSS({
       primaryColor,
       backgroundColor,
@@ -72,47 +83,41 @@ export function TextCanvas() {
   };
 
   const canvasStyle: React.CSSProperties = {
-    width: `${state.canvasSettings.width}px`,
-    height: `${state.canvasSettings.height}px`,
-    borderRadius: `${state.canvasSettings.borderRadius}px`,
+    width: `${canvasSettings.width}px`,
+    height: `${canvasSettings.height}px`,
+    borderRadius: `${canvasSettings.borderRadius}px`,
     position: 'relative',
-    border: '2px solid #e5e7eb',
+    border: '1px solid var(--border)',
     overflow: 'hidden',
     margin: '0 auto',
-    ...getBackgroundStyle(state.canvasSettings.background),
+    boxShadow: 'var(--canvas-shadow)',
+    ...getBackgroundStyle(canvasSettings.background),
   };
 
   return (
-    <div className="flex justify-center p-4 container-safe">
+    <div className="flex justify-center py-4">
       <div
         ref={canvasRef}
         id="text-canvas"
         style={canvasStyle}
         onClick={handleCanvasClick}
-        className="transition-smooth hover:shadow-2xl hover:shadow-purple-500/10 relative overflow-hidden group"
+        className="relative overflow-hidden"
       >
-        {state.textElements.map((element) => (
-          <TextElement
-            key={element.id}
-            element={element}
-            isSelected={state.selectedElementId === element.id}
-          />
+        {textElementIds.map((id) => (
+          <TextElement key={id} elementId={id} />
         ))}
-        {state.textElements.length === 0 && (
+        {!hasElements && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="text-center animate-bounce-subtle">
-              <div className="text-6xl mb-4 animate-float">✨</div>
-              <p className="text-lg text-muted-foreground font-medium word-wrap">
-                Click &quot;Add Text&quot; to start creating
+            <div className="max-w-xs text-center">
+              <p className="text-lg font-medium text-foreground">
+                Start by adding a text layer
               </p>
-              <p className="text-sm text-muted-foreground/70 mt-2 word-wrap">
-                Your canvas awaits some magic!
+              <p className="text-sm text-muted-foreground">
+                Your canvas is ready for typography experiments.
               </p>
             </div>
           </div>
         )}
-        
-        <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-smooth pointer-events-none animate-glow" />
       </div>
     </div>
   );

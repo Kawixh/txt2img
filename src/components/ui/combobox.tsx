@@ -113,7 +113,7 @@ export function Combobox({
       </Button>
 
       {open && (
-        <div className="bg-popover animate-in fade-in-0 zoom-in-95 absolute top-full z-50 mt-1 w-full rounded-md border p-0 shadow-md">
+        <div className="bg-popover absolute top-full z-50 mt-2 w-full rounded-xl border border-border/70 p-0 shadow-[var(--panel-shadow)]">
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
@@ -140,9 +140,9 @@ export function Combobox({
                 <div
                   key={option.value}
                   className={cn(
-                    'hover:bg-accent hover:text-accent-foreground relative flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none select-none',
+                    'relative flex cursor-pointer items-center rounded-lg px-2 py-1.5 text-sm outline-none select-none hover:bg-muted',
                     value === option.value &&
-                      'bg-accent text-accent-foreground',
+                      'bg-muted text-foreground',
                   )}
                   onClick={() => handleSelect(option.value)}
                 >

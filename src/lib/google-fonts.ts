@@ -7,6 +7,12 @@ export interface GoogleFont {
   files: Record<string, string>;
   category: 'serif' | 'sans-serif' | 'display' | 'handwriting' | 'monospace';
   kind: string;
+  axes?: Array<{
+    tag: string;
+    min: number;
+    max: number;
+    defaultValue: number;
+  }>;
 }
 
 export interface GoogleFontsResponse {
@@ -158,7 +164,9 @@ class GoogleFontsManager {
 
   async loadFont(
     fontFamily: string,
-    variants: string[] = ['400'],
+    options: string[] | { variants?: string[]; axes?: GoogleFont['axes'] } = [
+      '400',
+    ],
   ): Promise<void> {
     if (this.loadedFonts.has(fontFamily)) {
       return;
@@ -166,9 +174,22 @@ class GoogleFontsManager {
 
     return new Promise((resolve, reject) => {
       try {
-        // Create font variants string for Google Fonts URL
-        const variantsString = variants.join(',');
-        const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@${variantsString}&display=swap`;
+        const resolvedOptions = Array.isArray(options)
+          ? { variants: options, axes: undefined }
+          : options;
+
+        const variants = resolvedOptions?.variants ?? ['400'];
+        const axes = resolvedOptions?.axes?.filter(
+          (axis) =>
+            axis &&
+            typeof axis.tag === 'string' &&
+            Number.isFinite(axis.min) &&
+            Number.isFinite(axis.max),
+        );
+
+        const fontUrl = axes && axes.length > 0
+          ? this.buildVariableFontUrl(fontFamily, axes)
+          : this.buildStaticFontUrl(fontFamily, variants);
 
         // Check if font is already loaded
         const existingLink = document.querySelector(
@@ -227,6 +248,22 @@ class GoogleFontsManager {
         reject(error);
       }
     });
+  }
+
+  private buildVariableFontUrl(fontFamily: string, axes: GoogleFont['axes']) {
+    const axisTags = axes.map((axis) => axis.tag);
+    const axisRanges = axes.map((axis) => `${axis.min}..${axis.max}`);
+
+    return `https://fonts.googleapis.com/css2?family=${encodeURIComponent(
+      fontFamily,
+    )}:${axisTags.join(',')}@${axisRanges.join(',')}&display=swap`;
+  }
+
+  private buildStaticFontUrl(fontFamily: string, variants: string[]) {
+    const variantsString = variants.join(';');
+    return `https://fonts.googleapis.com/css2?family=${encodeURIComponent(
+      fontFamily,
+    )}:wght@${variantsString}&display=swap`;
   }
 
   private async verifyFontReady(fontFamily: string): Promise<void> {

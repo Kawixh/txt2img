@@ -347,6 +347,52 @@ export function getCachedVariableFontInfo(fontFamily: string): VariableFontInfo 
   return null;
 }
 
+export function normalizeAxesFromMetadata(
+  axes?: GoogleFont['axes'],
+): FontAxis[] {
+  if (!axes || axes.length === 0) return [];
+
+  return axes
+    .map((axis) => {
+      const axisInfo = AXIS_INFO[axis.tag];
+      const fallbackRange = AXIS_RANGES[axis.tag];
+      const min = Number.isFinite(axis.min) ? axis.min : fallbackRange?.min ?? 0;
+      const max = Number.isFinite(axis.max) ? axis.max : fallbackRange?.max ?? min;
+      const defaultValue = Number.isFinite(axis.defaultValue)
+        ? axis.defaultValue
+        : fallbackRange?.default ?? min;
+
+      return {
+        tag: axis.tag,
+        name: axisInfo?.name || axis.tag.toUpperCase(),
+        min,
+        max,
+        default: defaultValue,
+        description: axisInfo?.description,
+      };
+    })
+    .filter((axis) => Number.isFinite(axis.min) && Number.isFinite(axis.max));
+}
+
+export async function getVariableFontInfoFromMetadata(
+  fontFamily: string,
+  axes?: GoogleFont['axes'],
+): Promise<VariableFontInfo> {
+  const normalizedAxes = normalizeAxesFromMetadata(axes);
+  if (normalizedAxes.length > 0) {
+    const info: VariableFontInfo = {
+      isVariable: true,
+      axes: normalizedAxes,
+      cached: false,
+    };
+    (info as any).timestamp = Date.now();
+    variableFontCache.set(fontFamily, info);
+    return info;
+  }
+
+  return getVariableFontInfo(fontFamily);
+}
+
 /**
  * Pre-populate cache with known variable fonts for better UX
  */

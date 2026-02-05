@@ -1,31 +1,34 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Fraunces, Spline_Sans, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
 import { PostHogProvider } from './providers';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const bodyFont = Spline_Sans({
+  variable: '--font-body',
   subsets: ['latin'],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const displayFont = Fraunces({
+  variable: '--font-display',
+  subsets: ['latin'],
+});
+
+const monoFont = Spline_Sans_Mono({
+  variable: '--font-mono',
   subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: 'Glim | Text to Image Creator - Design Vibes ✨',
+  title: 'Glim | Text to Image Creator',
   description:
-    'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
+    'Craft typography-driven visuals with precise control over fonts, spacing, and layout.',
   keywords: [
     'text to image',
     'design tool',
-    'aesthetic',
+    'typography',
     'visual creator',
     'font generator',
     'creative tool',
-    'gen z',
-    'design vibes',
   ],
   authors: [{ name: 'Glim Team' }],
   creator: 'Glim',
@@ -40,9 +43,9 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'Glim | Text to Image Creator - Design Vibes ✨',
+    title: 'Glim | Text to Image Creator',
     description:
-      'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
+      'Craft typography-driven visuals with precise control over fonts, spacing, and layout.',
     url: 'https://glim.dev',
     siteName: 'Glim',
     images: [
@@ -58,9 +61,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Glim | Text to Image Creator - Design Vibes ✨',
+    title: 'Glim | Text to Image Creator',
     description:
-      'Turn your words into fire visuals instantly. Create aesthetic text images with custom fonts, colors & backgrounds. No cap, just pure creative energy. 🔥',
+      'Craft typography-driven visuals with precise control over fonts, spacing, and layout.',
     images: ['/og-image.png'],
     creator: '@glimdev',
   },
@@ -92,7 +95,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#121826" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -101,7 +104,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable} antialiased`}
       >
         <PostHogProvider>{children}</PostHogProvider>
       </body>

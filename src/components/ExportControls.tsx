@@ -2,58 +2,39 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useApp } from '@/contexts/AppContext';
+import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
 import { reliableExporter } from '@/lib/reliable-export';
 
 export function ExportControls() {
-  const { state, setExportStatus, setError } = useApp();
+  const { setExportStatus, setError } = useAppActions();
+  const exportStatus = useAppStore((state) => state.exportStatus);
+  const textElements = useAppStore((state) => state.textElements);
+  const canvasSettings = useAppStore((state) => state.canvasSettings);
+  const error = useAppStore((state) => state.error);
 
   const handleExport = async () => {
     try {
       setExportStatus('loading');
       setError(null);
 
-      console.log('🎨 Starting canvas-based export with detailed logging...');
-      console.log(
-        'Text elements to export:',
-        state.textElements.map((el) => ({
-          id: el.id,
-          content: el.content,
-          x: el.x,
-          y: el.y,
-          width: el.width,
-          fontSize: el.fontSize,
-          textAlign: el.textAlign,
-          fontFamily: el.fontFamily,
-        })),
-      );
-      console.log('Canvas settings:', state.canvasSettings);
-
-      // Get unique font families used in text elements
       const fontFamilies = [
-        ...new Set(state.textElements.map((el) => el.fontFamily)),
+        ...new Set(textElements.map((el) => el.fontFamily)),
       ];
-      console.log('Font families to ensure:', fontFamilies);
 
-      // Use reliable exporter that handles fonts properly
       const dataUrl = await reliableExporter.exportElementToPng(
         'text-canvas',
         {
-          width: state.canvasSettings.width,
-          height: state.canvasSettings.height,
+          width: canvasSettings.width,
+          height: canvasSettings.height,
           pixelRatio: 2,
           quality: 1.0,
         },
         fontFamilies,
       );
 
-      console.log('✅ Reliable export completed successfully');
-
-      // Download the image
       reliableExporter.downloadImage(dataUrl, `text-image-${Date.now()}.png`);
 
-      console.log('HTML-to-image export successful!');
       setExportStatus('success');
       setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
@@ -71,7 +52,7 @@ export function ExportControls() {
   };
 
   const getButtonContent = () => {
-    switch (state.exportStatus) {
+    switch (exportStatus) {
       case 'loading':
         return (
           <>
@@ -104,7 +85,7 @@ export function ExportControls() {
   };
 
   const getButtonVariant = () => {
-    switch (state.exportStatus) {
+    switch (exportStatus) {
       case 'success':
         return 'default';
       case 'error':
@@ -114,8 +95,7 @@ export function ExportControls() {
     }
   };
 
-  const isDisabled =
-    state.exportStatus === 'loading' || state.textElements.length === 0;
+  const isDisabled = exportStatus === 'loading' || textElements.length === 0;
 
   return (
     <Card>
@@ -137,24 +117,24 @@ export function ExportControls() {
             {getButtonContent()}
           </Button>
 
-          {state.textElements.length === 0 && (
+          {textElements.length === 0 && (
             <p className="text-muted-foreground text-center text-sm">
               Add some text elements to export
             </p>
           )}
 
-          {state.error && (
-            <div className="bg-destructive/10 border-destructive/20 rounded-md border p-3">
-              <p className="text-destructive text-sm">
+          {error && (
+            <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3">
+              <p className="text-sm text-destructive">
                 <AlertCircle size={14} className="mr-1 inline" />
-                {state.error}
+                {error}
               </p>
             </div>
           )}
 
-          {state.exportStatus === 'success' && (
-            <div className="rounded-md border border-green-200 bg-green-50 p-3">
-              <p className="text-sm text-green-700">
+          {exportStatus === 'success' && (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
+              <p className="text-sm text-emerald-700">
                 <CheckCircle size={14} className="mr-1 inline" />
                 Image exported successfully!
               </p>
@@ -168,8 +148,7 @@ export function ExportControls() {
           <p>• Modern CSS color support</p>
           <p>• SVG-based rendering engine</p>
           <p>
-            • Current size: {state.canvasSettings.width} ×{' '}
-            {state.canvasSettings.height}px
+            • Current size: {canvasSettings.width} × {canvasSettings.height}px
           </p>
         </div>
       </CardContent>
