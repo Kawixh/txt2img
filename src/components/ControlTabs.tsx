@@ -49,7 +49,7 @@ export function ControlTabs() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-border/70 p-4">
+      <div className="border-b border-border/40 px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
           Controls
         </p>
@@ -70,7 +70,7 @@ export function ControlTabs() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-[var(--panel-shadow-soft)]">
+        <div className="rounded-2xl bg-card/80 p-4 shadow-[var(--panel-shadow-soft)] ring-1 ring-border/40">
           {tabs.find((tab) => tab.id === activeTab)?.component}
         </div>
       </div>

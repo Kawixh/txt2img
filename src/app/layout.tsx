@@ -1,6 +1,28 @@
 import type { Metadata } from 'next';
+import { DM_Mono, Fraunces, Newsreader } from 'next/font/google';
 import './globals.css';
 import { PostHogProvider } from './providers';
+
+const fontBody = Newsreader({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-body',
+  weight: ['400', '500', '600'],
+});
+
+const fontDisplay = Fraunces({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-display',
+  weight: ['400', '600', '700'],
+});
+
+const fontMono = DM_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-mono',
+  weight: ['400', '500'],
+});
 
 export const metadata: Metadata = {
   title: 'Glim | Text to Image Creator',
@@ -79,9 +101,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#121826" />
+        <meta name="theme-color" content="#f7f1e7" />
       </head>
-      <body className="antialiased font-sans">
+      <body
+        className={`${fontBody.variable} ${fontDisplay.variable} ${fontMono.variable} antialiased font-sans`}
+      >
         <PostHogProvider>{children}</PostHogProvider>
       </body>
     </html>

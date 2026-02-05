@@ -291,7 +291,7 @@ export function TextCanvas() {
   const zoomValue = zoomMode === 'fit' ? fitScale : zoom;
 
   const minimap = useMemo(() => {
-    const maxSize = 160;
+    const maxSize = 120;
     const miniScale = Math.min(
       maxSize / canvasSettings.width,
       maxSize / canvasSettings.height,
@@ -343,6 +343,26 @@ export function TextCanvas() {
     viewportSize.width,
   ]);
 
+  const isFullView = useMemo(() => {
+    if (!viewportSize.width || !viewportSize.height) return true;
+    if (zoomMode === 'fit') return true;
+
+    return (
+      viewRect.width >= canvasSettings.width - 1 &&
+      viewRect.height >= canvasSettings.height - 1
+    );
+  }, [
+    canvasSettings.height,
+    canvasSettings.width,
+    viewportSize.height,
+    viewportSize.width,
+    viewRect.height,
+    viewRect.width,
+    zoomMode,
+  ]);
+
+  const shouldShowNavigator = zoomMode === 'manual' && !isFullView;
+
   const handleMinimapPointer = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (zoomMode !== 'manual') return;
@@ -374,7 +394,6 @@ export function TextCanvas() {
     position: 'absolute',
     left: 0,
     top: 0,
-    border: '1px solid var(--border)',
     overflow: 'hidden',
     boxShadow: 'var(--canvas-shadow)',
     transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
@@ -384,10 +403,10 @@ export function TextCanvas() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-muted/50 px-4 py-3 shadow-[var(--panel-shadow-soft)]">
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-full border border-border/50 bg-card/70 px-4 py-2 shadow-[var(--panel-shadow-soft)] backdrop-blur">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
             {zoomMode === 'fit' ? 'Auto-fit' : 'Zoom'}
           </span>
           <div className="flex items-center gap-2">
@@ -395,12 +414,12 @@ export function TextCanvas() {
               variant="outline"
               size="icon"
               onClick={() => applyZoom(scale - 0.1)}
-              className="size-8"
+              className="size-7 rounded-full"
               aria-label="Zoom out"
             >
-              <Minus size={14} />
+              <Minus size={13} />
             </Button>
-            <div className="w-36">
+            <div className="w-28">
               <Slider
                 value={[zoomValue]}
                 min={ZOOM_MIN}
@@ -413,13 +432,13 @@ export function TextCanvas() {
               variant="outline"
               size="icon"
               onClick={() => applyZoom(scale + 0.1)}
-              className="size-8"
+              className="size-7 rounded-full"
               aria-label="Zoom in"
             >
-              <Plus size={14} />
+              <Plus size={13} />
             </Button>
           </div>
-          <div className="rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-semibold text-foreground">
+          <div className="rounded-full border border-border/50 bg-background/80 px-3 py-1 text-[11px] font-semibold text-foreground">
             {Math.round(scale * 100)}%
           </div>
         </div>
@@ -439,18 +458,22 @@ export function TextCanvas() {
           >
             100%
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setPan(clampPan(getCenteredPan(scale), scale))}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPan(clampPan(getCenteredPan(scale), scale))}
+          >
             <LocateFixed size={14} />
             Center
           </Button>
         </div>
       </div>
 
-      <div className="relative flex-1 min-h-0 rounded-3xl border border-border/70 bg-muted/30 p-4 shadow-inner">
+      <div className="relative flex-1 min-h-0 rounded-[28px] bg-[radial-gradient(circle_at_top,oklch(0.99_0.01_85/0.9),oklch(0.96_0.02_85/0.9))] p-4 shadow-[var(--panel-shadow)]">
         <div
           ref={viewportRef}
           className={cn(
-            'relative h-full w-full overflow-hidden rounded-2xl border border-border/70 bg-background/70',
+            'relative h-full w-full overflow-hidden rounded-[24px] bg-background/70',
             'bg-[radial-gradient(circle_at_1px_1px,oklch(0.35_0.02_260/0.08)_1px,transparent_0)] bg-[size:24px_24px]',
             zoomMode === 'manual'
               ? isPanning
@@ -490,13 +513,24 @@ export function TextCanvas() {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-4 right-4">
-          <div className="pointer-events-auto rounded-2xl border border-border/70 bg-card/90 p-3 shadow-[var(--panel-shadow)] backdrop-blur">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-              Navigator
-            </p>
+        <div
+          className={cn(
+            'pointer-events-none absolute bottom-4 right-4 origin-bottom-right transition-all duration-200',
+            shouldShowNavigator ? 'opacity-100 scale-100' : 'opacity-0 scale-95',
+          )}
+          aria-hidden={!shouldShowNavigator}
+        >
+          <div className="pointer-events-auto rounded-2xl bg-card/85 p-3 shadow-[var(--panel-shadow)] ring-1 ring-border/40 backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                Navigator
+              </p>
+              <span className="text-[10px] font-medium text-muted-foreground">
+                {Math.round(scale * 100)}%
+              </span>
+            </div>
             <div
-              className="relative mt-2 overflow-hidden rounded-xl border border-border/70"
+              className="relative mt-2 overflow-hidden rounded-xl ring-1 ring-border/40"
               style={{ width: minimap.width, height: minimap.height }}
               onMouseDown={handleMinimapPointer}
             >
@@ -518,7 +552,7 @@ export function TextCanvas() {
               />
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              {zoomMode === 'fit' ? 'Fit view locked' : 'Click to pan view'}
+              Click to pan view
             </p>
           </div>
         </div>
