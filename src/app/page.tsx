@@ -29,7 +29,7 @@ export default function Home() {
             <ControlTabs />
           </aside>
 
-          <main className="h-full min-h-0 overflow-hidden rounded-3xl border border-border/70 bg-card/90 p-6 shadow-[var(--panel-shadow)]">
+          <main className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-border/70 bg-card/90 p-6 shadow-[var(--panel-shadow)]">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-display text-2xl">Canvas</h2>
@@ -41,7 +41,9 @@ export default function Home() {
                 Live preview
               </div>
             </div>
-            <TextCanvas />
+            <div className="flex-1 min-h-0">
+              <TextCanvas />
+            </div>
           </main>
         </div>
 

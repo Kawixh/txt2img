@@ -7,9 +7,15 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 
 interface TextElementProps {
   elementId: string;
+  canvasRef: React.RefObject<HTMLDivElement>;
+  canvasScale: number;
 }
 
-function TextElementComponent({ elementId }: TextElementProps) {
+function TextElementComponent({
+  elementId,
+  canvasRef,
+  canvasScale,
+}: TextElementProps) {
   const { updateTextElement, removeTextElement, selectElement } = useAppActions();
   const element = useAppStore(
     (state) =>
@@ -66,13 +72,28 @@ function TextElementComponent({ elementId }: TextElementProps) {
     };
   }, []);
 
+  const getCanvasPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!canvasRef.current || canvasScale === 0) {
+        return { x: clientX, y: clientY };
+      }
+      const rect = canvasRef.current.getBoundingClientRect();
+      return {
+        x: (clientX - rect.left) / canvasScale,
+        y: (clientY - rect.top) / canvasScale,
+      };
+    },
+    [canvasRef, canvasScale],
+  );
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!element) return;
     e.preventDefault();
+    const point = getCanvasPoint(e.clientX, e.clientY);
     setIsDragging(true);
     setDragStart({
-      x: e.clientX - element.x,
-      y: e.clientY - element.y,
+      x: point.x - element.x,
+      y: point.y - element.y,
     });
     selectElement(element.id);
   };
@@ -80,8 +101,9 @@ function TextElementComponent({ elementId }: TextElementProps) {
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging || !element) return;
 
-    const newX = e.clientX - dragStart.x;
-    const newY = e.clientY - dragStart.y;
+    const point = getCanvasPoint(e.clientX, e.clientY);
+    const newX = point.x - dragStart.x;
+    const newY = point.y - dragStart.y;
 
     updateTextElement(element.id, { x: newX, y: newY });
   };
@@ -99,7 +121,7 @@ function TextElementComponent({ elementId }: TextElementProps) {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, dragStart, element]);
+  }, [isDragging, dragStart, element, getCanvasPoint, updateTextElement]);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLDivElement>) => {
     if (!element) return;
@@ -119,8 +141,12 @@ function TextElementComponent({ elementId }: TextElementProps) {
     }
 
     const elementRect = elementRef.current.getBoundingClientRect();
-    const actualWidth = elementRect.width || element.width;
-    const actualHeight = elementRect.height || element.fontSize * 1.4;
+    const scaledWidth = elementRect.width || element.width;
+    const scaledHeight = elementRect.height || element.fontSize * 1.4;
+    const actualWidth =
+      canvasScale > 0 ? scaledWidth / canvasScale : scaledWidth;
+    const actualHeight =
+      canvasScale > 0 ? scaledHeight / canvasScale : scaledHeight;
 
     const finalPosition = calculateFinalPosition({
       preset: element.positionPreset,
@@ -139,6 +165,7 @@ function TextElementComponent({ elementId }: TextElementProps) {
     };
   }, [
     canvasSize,
+    canvasScale,
     element,
   ]);
 
@@ -243,7 +270,7 @@ function TextElementComponent({ elementId }: TextElementProps) {
   if (!element) return null;
 
   return (
-    <div className="relative">
+    <div className="relative" data-text-element>
       <div
         ref={elementRef}
         style={fontStyle}
