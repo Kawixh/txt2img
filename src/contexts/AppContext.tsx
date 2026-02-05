@@ -18,7 +18,7 @@ import {
 } from '@/types';
 import { googleFontsManager } from '@/lib/google-fonts';
 
-interface AppActions {
+type AppActions = {
   addTextElement: (content: string) => void;
   updateTextElement: (id: string, updates: Partial<TextElement>) => void;
   removeTextElement: (id: string) => void;
@@ -39,7 +39,7 @@ interface AppActions {
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (category: GoogleFont['category'] | 'variable' | '') => void;
   getFilteredFonts: () => GoogleFont[];
-}
+};
 
 type AppStore = {
   getState: () => AppState;

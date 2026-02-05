@@ -5,11 +5,11 @@ import { calculateFinalPosition } from '@/lib/positioning';
 import { Trash2 } from 'lucide-react';
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 
-interface TextElementProps {
+type TextElementProps = {
   elementId: string;
-  canvasRef: React.RefObject<HTMLDivElement>;
+  canvasRef: React.RefObject<HTMLDivElement | null>;
   canvasScale: number;
-}
+};
 
 function TextElementComponent({
   elementId,
@@ -43,7 +43,7 @@ function TextElementComponent({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [localContent, setLocalContent] = useState('');
   const elementRef = useRef<HTMLDivElement>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (element) {
@@ -123,9 +123,9 @@ function TextElementComponent({
     }
   }, [isDragging, dragStart, element, getCanvasPoint, updateTextElement]);
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLDivElement>) => {
+  const handleContentChange = (event: React.FormEvent<HTMLDivElement>) => {
     if (!element) return;
-    const newContent = e.currentTarget.textContent || '';
+    const newContent = event.currentTarget.textContent || '';
     setLocalContent(newContent);
     debouncedUpdateContent(newContent);
   };
@@ -253,12 +253,8 @@ function TextElementComponent({
       minWidth: '20px',
       minHeight: '20px',
       transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+      ...(fontVariationSettings ? { fontVariationSettings } : {}),
     };
-
-    if (fontVariationSettings) {
-      (baseStyle as Record<string, any>).fontVariationSettings =
-        fontVariationSettings;
-    }
 
     return baseStyle;
   }, [

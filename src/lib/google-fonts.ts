@@ -1,4 +1,6 @@
-export interface GoogleFont {
+import type { TextElement } from '@/types';
+
+export type GoogleFont = {
   family: string;
   variants: string[];
   subsets: string[];
@@ -13,25 +15,27 @@ export interface GoogleFont {
     max: number;
     defaultValue: number;
   }>;
-}
+};
 
-export interface GoogleFontsResponse {
+type GoogleFontAxis = NonNullable<GoogleFont['axes']>[number];
+
+export type GoogleFontsResponse = {
   kind: string;
   items: GoogleFont[];
   error?: string;
-}
+};
 
-export interface FontCacheItem {
+export type FontCacheItem = {
   font: GoogleFont;
   timestamp: number;
   loaded: boolean;
-}
+};
 
-export interface FontSearchOptions {
+export type FontSearchOptions = {
   sort?: 'alpha' | 'date' | 'popularity' | 'style' | 'trending';
   category?: GoogleFont['category'];
   subset?: string;
-}
+};
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 const POPULAR_FONTS_CACHE_KEY = 'google-fonts-popular';
@@ -175,20 +179,19 @@ class GoogleFontsManager {
           : options;
 
         const variants = this.normalizeVariants(resolvedOptions?.variants);
-        const axes =
-          resolvedOptions?.axes
-            ?.filter(
-              (axis) =>
-                axis &&
-                typeof axis.tag === 'string' &&
-                Number.isFinite(axis.min) &&
-                Number.isFinite(axis.max),
-            )
-            .map((axis) => ({
-              ...axis,
-              min: Number(axis.min),
-              max: Number(axis.max),
-            })) ?? [];
+        const axes: GoogleFontAxis[] = (resolvedOptions?.axes ?? [])
+          .filter(
+            (axis) =>
+              axis &&
+              typeof axis.tag === 'string' &&
+              Number.isFinite(axis.min) &&
+              Number.isFinite(axis.max),
+          )
+          .map((axis) => ({
+            ...axis,
+            min: Number(axis.min),
+            max: Number(axis.max),
+          }));
 
         const urlsToTry: string[] = [];
         if (axes.length > 0) {
@@ -313,10 +316,10 @@ class GoogleFontsManager {
     return unique.length > 0 ? unique : ['400'];
   }
 
-  private pickFallbackAxes(axes: GoogleFont['axes']): GoogleFont['axes'] {
-    if (!axes || axes.length === 0) return [];
+  private pickFallbackAxes(axes: GoogleFontAxis[]): GoogleFontAxis[] {
+    if (axes.length === 0) return [];
 
-    const axisMap = new Map<string, GoogleFont['axes'][number]>();
+    const axisMap = new Map<string, GoogleFontAxis>();
     axes.forEach((axis) => {
       if (axis?.tag) {
         axisMap.set(axis.tag, axis);
@@ -326,7 +329,7 @@ class GoogleFontsManager {
     const preferredTags = ['ital', 'opsz', 'wght'];
     const selected = preferredTags
       .map((tag) => axisMap.get(tag))
-      .filter(Boolean) as GoogleFont['axes'];
+      .filter((axis): axis is GoogleFontAxis => Boolean(axis));
 
     if (selected.length > 0) {
       return selected;
@@ -335,8 +338,8 @@ class GoogleFontsManager {
     return axes.slice(0, 1);
   }
 
-  private buildVariableFontUrl(fontFamily: string, axes: GoogleFont['axes']) {
-    const axisMap = new Map<string, GoogleFont['axes'][number]>();
+  private buildVariableFontUrl(fontFamily: string, axes: GoogleFontAxis[]) {
+    const axisMap = new Map<string, GoogleFontAxis>();
     axes.forEach((axis) => {
       if (axis?.tag) {
         const min = Number(axis.min);
@@ -359,7 +362,7 @@ class GoogleFontsManager {
     }
 
     const italAxis = axisMap.get('ital');
-    const formatRange = (axis: GoogleFont['axes'][number]) => {
+    const formatRange = (axis: GoogleFontAxis) => {
       const min = Math.min(axis.min, axis.max);
       const max = Math.max(axis.min, axis.max);
       return min === max ? `${min}` : `${min}..${max}`;
@@ -501,7 +504,7 @@ class GoogleFontsManager {
   /**
    * Gets font weights for text elements to optimize embedding
    */
-  extractFontWeights(textElements: any[]): Map<string, string[]> {
+  extractFontWeights(textElements: TextElement[]): Map<string, string[]> {
     const fontWeightsMap = new Map<string, string[]>();
 
     textElements.forEach((element) => {
@@ -524,7 +527,7 @@ class GoogleFontsManager {
   /**
    * Gets all font families currently used in text elements
    */
-  getUsedFontFamilies(textElements: any[]): string[] {
+  getUsedFontFamilies(textElements: TextElement[]): string[] {
     return [
       ...new Set(textElements.map((element) => element.fontFamily)),
     ].filter((font) => !this.isSystemFont(font));

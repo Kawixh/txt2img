@@ -46,6 +46,10 @@
 }
 
 :root {
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: ui-serif, "Iowan Old Style", "Apple Garamond", "Times New Roman", serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   --background: oklch(0.98 0.01 95);
   --foreground: oklch(0.18 0.02 260);
   --card: oklch(0.995 0.002 100);

@@ -1,17 +1,50 @@
-import { FontSearchOptions, GoogleFontsResponse, GoogleFont } from '@/lib/google-fonts';
+import type { FontSearchOptions, GoogleFontsResponse, GoogleFont } from '@/lib/google-fonts';
 import { NextRequest, NextResponse } from 'next/server';
 
 const METADATA_URL = 'https://fonts.google.com/metadata/fonts';
 const METADATA_CACHE_TTL = 24 * 60 * 60 * 1000;
 
+type GoogleFontAxis = NonNullable<GoogleFont['axes']>[number];
+
+type GoogleFontsMetadataAxis = {
+  tag?: string;
+  axisTag?: string;
+  name?: string;
+  tagName?: string;
+  min?: number | string;
+  minValue?: number | string;
+  start?: number | string;
+  max?: number | string;
+  maxValue?: number | string;
+  end?: number | string;
+  defaultValue?: number | string;
+  default?: number | string;
+  value?: number | string;
+};
+
+type GoogleFontsMetadataFont = {
+  family?: string;
+  name?: string;
+  axes?: GoogleFontsMetadataAxis[];
+  axis?: GoogleFontsMetadataAxis[];
+  variations?: GoogleFontsMetadataAxis[];
+};
+
+type GoogleFontsMetadataPayload = {
+  familyMetadataList?: GoogleFontsMetadataFont[];
+  familyMetadata?: GoogleFontsMetadataFont[];
+  fonts?: GoogleFontsMetadataFont[];
+  items?: GoogleFontsMetadataFont[];
+};
+
 let metadataCache:
   | {
       timestamp: number;
-      axesByFamily: Map<string, GoogleFont['axes']>;
+      axesByFamily: Map<string, GoogleFontAxis[]>;
     }
   | null = null;
 
-async function getAxesByFamily(): Promise<Map<string, GoogleFont['axes']>> {
+async function getAxesByFamily(): Promise<Map<string, GoogleFontAxis[]>> {
   if (
     metadataCache &&
     Date.now() - metadataCache.timestamp < METADATA_CACHE_TTL
@@ -30,7 +63,7 @@ async function getAxesByFamily(): Promise<Map<string, GoogleFont['axes']>> {
 
   const text = await response.text();
   const cleaned = text.replace(/^\)\]\}'\s*/, '');
-  const data = JSON.parse(cleaned);
+  const data = JSON.parse(cleaned) as GoogleFontsMetadataPayload;
 
   const list =
     data.familyMetadataList ||
@@ -39,15 +72,15 @@ async function getAxesByFamily(): Promise<Map<string, GoogleFont['axes']>> {
     data.items ||
     [];
 
-  const axesByFamily = new Map<string, GoogleFont['axes']>();
+  const axesByFamily = new Map<string, GoogleFontAxis[]>();
 
-  list.forEach((font: any) => {
+  list.forEach((font) => {
     const family = font.family || font.name;
     const axesSource = font.axes || font.axis || font.variations || [];
     if (!family || !Array.isArray(axesSource) || axesSource.length === 0) return;
 
     const axes = axesSource
-      .map((axis: any) => {
+      .map((axis): GoogleFontAxis | null => {
         const tag = axis.tag || axis.axisTag || axis.name || axis.tagName;
         const min = axis.min ?? axis.minValue ?? axis.start ?? axis.minValue;
         const max = axis.max ?? axis.maxValue ?? axis.end ?? axis.maxValue;
@@ -69,7 +102,7 @@ async function getAxesByFamily(): Promise<Map<string, GoogleFont['axes']>> {
           defaultValue: Number.isFinite(defaultParsed) ? defaultParsed : minValue,
         };
       })
-      .filter(Boolean) as GoogleFont['axes'];
+      .filter((axis): axis is GoogleFontAxis => axis !== null);
 
     if (axes.length > 0) {
       axesByFamily.set(family, axes);
@@ -138,7 +171,7 @@ export async function POST(request: NextRequest) {
 
     const data: GoogleFontsResponse = await response.json();
 
-    let axesByFamily: Map<string, GoogleFont['axes']> | null = null;
+    let axesByFamily: Map<string, GoogleFontAxis[]> | null = null;
     try {
       axesByFamily = await getAxesByFamily();
     } catch (error) {

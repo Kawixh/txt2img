@@ -10,7 +10,7 @@ export type PositionPreset =
   | 'bottom-left'
   | 'bottom-right';
 
-export interface TextElement {
+export type TextElement = {
   id: string;
   content: string;
   x: number;
@@ -38,20 +38,20 @@ export interface TextElement {
   paddingX: number;
   paddingY: number;
   wordWrap: boolean;
-}
+};
 
 export type BackgroundType = 'solid' | 'transparent' | 'gradient' | 'pattern';
 
-export interface SolidBackground {
+export type SolidBackground = {
   type: 'solid';
   color: string;
-}
+};
 
-export interface TransparentBackground {
+export type TransparentBackground = {
   type: 'transparent';
-}
+};
 
-export interface GradientBackground {
+export type GradientBackground = {
   type: 'gradient';
   direction:
     | 'to-r'
@@ -65,9 +65,9 @@ export interface GradientBackground {
   from: string;
   to: string;
   via?: string;
-}
+};
 
-export interface PatternBackground {
+export type PatternBackground = {
   type: 'pattern';
   patternId: string;
   primaryColor: string;
@@ -75,7 +75,7 @@ export interface PatternBackground {
   opacity: number;
   size: number;
   spacing: number;
-}
+};
 
 export type BackgroundConfig =
   | SolidBackground
@@ -83,14 +83,14 @@ export type BackgroundConfig =
   | GradientBackground
   | PatternBackground;
 
-export interface CanvasSettings {
+export type CanvasSettings = {
   width: number;
   height: number;
   background: BackgroundConfig;
   borderRadius: number;
-}
+};
 
-export interface AppState {
+export type AppState = {
   textElements: TextElement[];
   canvasSettings: CanvasSettings;
   selectedElementId: string | null;
@@ -98,11 +98,11 @@ export interface AppState {
   error: string | null;
   exportStatus: 'idle' | 'loading' | 'success' | 'error';
   fonts: FontsState;
-}
+};
 
 export type FontFamily = string;
 
-export interface GoogleFont {
+export type GoogleFont = {
   family: string;
   variants: string[];
   subsets: string[];
@@ -117,21 +117,21 @@ export interface GoogleFont {
     max: number;
     defaultValue: number;
   }>;
-}
+};
 
-export interface GoogleFontsResponse {
+export type GoogleFontsResponse = {
   kind: string;
   items: GoogleFont[];
   error?: string;
-}
+};
 
-export interface FontSearchOptions {
+export type FontSearchOptions = {
   sort?: 'alpha' | 'date' | 'popularity' | 'style' | 'trending';
   category?: GoogleFont['category'];
   subset?: string;
-}
+};
 
-export interface FontsState {
+export type FontsState = {
   fonts: GoogleFont[];
   popularFonts: GoogleFont[];
   searchQuery: string;
@@ -141,4 +141,4 @@ export interface FontsState {
   currentlyLoadingFont: string | null;
   error: string | null;
   loadedFonts: Set<string>;
-}
+};

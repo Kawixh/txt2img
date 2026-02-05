@@ -1,12 +1,12 @@
 import { PositionPreset } from '@/types';
 
-export interface PositionPresetInfo {
+export type PositionPresetInfo = {
   id: PositionPreset;
   name: string;
   description: string;
   gridPosition: { row: number; col: number };
   icon: string;
-}
+};
 
 export const POSITION_PRESETS: PositionPresetInfo[] = [
   {
@@ -74,19 +74,19 @@ export const POSITION_PRESETS: PositionPresetInfo[] = [
   },
 ];
 
-export interface CanvasDimensions {
+export type CanvasDimensions = {
   width: number;
   height: number;
-}
+};
 
-export interface PositionCalculationParams {
+export type PositionCalculationParams = {
   preset: PositionPreset;
   canvasDimensions: CanvasDimensions;
   elementWidth: number;
   elementHeight: number;
   paddingX: number;
   paddingY: number;
-}
+};
 
 export function calculatePresetPosition(
   preset: PositionPreset,

@@ -1,19 +1,19 @@
-interface FontVariant {
+type FontVariant = {
   weight: string;
   style: string;
   url: string;
-}
+};
 
-interface FontData {
+type FontData = {
   family: string;
   variants: FontVariant[];
-}
+};
 
-interface EmbeddedFont {
+type EmbeddedFont = {
   family: string;
   css: string;
   base64Data: string;
-}
+};
 
 class FontEmbedding {
   private fontCache = new Map<string, string>();

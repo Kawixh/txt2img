@@ -4,15 +4,15 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export interface ComboboxOption {
+export type ComboboxOption = {
   value: string;
   label: string;
   category?: string;
   preview?: string;
-}
+};
 
-interface ComboboxProps {
-  options: ComboboxOption[];
+export type ComboboxProps<TOption extends ComboboxOption> = {
+  options: TOption[];
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
@@ -22,10 +22,10 @@ interface ComboboxProps {
   disabled?: boolean;
   loading?: boolean;
   onSearch?: (query: string) => void;
-  renderOption?: (option: ComboboxOption) => React.ReactNode;
-}
+  renderOption?: (option: TOption) => React.ReactNode;
+};
 
-export function Combobox({
+export function Combobox<TOption extends ComboboxOption>({
   options,
   value,
   onValueChange,
@@ -37,7 +37,7 @@ export function Combobox({
   loading = false,
   onSearch,
   renderOption,
-}: ComboboxProps) {
+}: ComboboxProps<TOption>) {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const dropdownRef = React.useRef<HTMLDivElement>(null);

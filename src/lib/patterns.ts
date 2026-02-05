@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-export interface PatternDefinition {
+export type PatternDefinition = {
   id: string;
   name: string;
   description: string;
@@ -27,7 +27,7 @@ export interface PatternDefinition {
     size: number;
     spacing: number;
   }) => CSSProperties;
-}
+};
 
 const toDataUri = (svg: string) =>
   `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;

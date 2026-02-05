@@ -1,20 +1,24 @@
 // Variable font utilities for detecting and working with variable font axes
-import { googleFontsManager, GoogleFont } from './google-fonts';
+import type { GoogleFont } from './google-fonts';
 
-export interface FontAxis {
+export type FontAxis = {
   tag: string;
   name: string;
   min: number;
   max: number;
   default: number;
   description?: string;
-}
+};
 
-export interface VariableFontInfo {
+export type VariableFontInfo = {
   isVariable: boolean;
   axes: FontAxis[];
   cached?: boolean;
-}
+};
+
+type CachedVariableFontInfo = VariableFontInfo & {
+  timestamp: number;
+};
 
 // Common variable font axes with their human-readable names and descriptions
 const AXIS_INFO: Record<string, { name: string; description: string }> = {
@@ -66,8 +70,19 @@ const AXIS_RANGES: Record<string, { min: number; max: number; default: number }>
 };
 
 // Cache for variable font info to avoid repeated detection
-const variableFontCache = new Map<string, VariableFontInfo>();
+const variableFontCache = new Map<string, CachedVariableFontInfo>();
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+const getValidCachedInfo = (
+  fontFamily: string,
+): CachedVariableFontInfo | null => {
+  const cached = variableFontCache.get(fontFamily);
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp >= CACHE_DURATION) {
+    return null;
+  }
+  return cached;
+};
 
 /**
  * Checks if a font is likely variable based on Google Fonts API data
@@ -300,25 +315,26 @@ export async function detectVariableFontAxes(fontFamily: string): Promise<FontAx
  */
 export async function getVariableFontInfo(fontFamily: string): Promise<VariableFontInfo> {
   // Check cache first
-  const cached = variableFontCache.get(fontFamily);
-  if (cached && Date.now() - (cached as any).timestamp < CACHE_DURATION) {
-    return { ...cached, cached: true };
+  const cached = getValidCachedInfo(fontFamily);
+  if (cached) {
+    const { timestamp: _timestamp, ...info } = cached;
+    return { ...info, cached: true };
   }
   
   const isVariable = await isVariableFont(fontFamily);
   const axes = isVariable ? await detectVariableFontAxes(fontFamily) : [];
   
-  const info: VariableFontInfo = {
+  const info: CachedVariableFontInfo = {
     isVariable,
     axes,
     cached: false,
+    timestamp: Date.now(),
   };
   
-  // Cache the result with timestamp
-  (info as any).timestamp = Date.now();
   variableFontCache.set(fontFamily, info);
   
-  return info;
+  const { timestamp: _timestamp, ...publicInfo } = info;
+  return publicInfo;
 }
 
 /**
@@ -332,17 +348,17 @@ export function clearVariableFontCache(): void {
  * Check if a font family is in the variable font cache
  */
 export function isVariableFontCached(fontFamily: string): boolean {
-  const cached = variableFontCache.get(fontFamily);
-  return cached && Date.now() - (cached as any).timestamp < CACHE_DURATION;
+  return Boolean(getValidCachedInfo(fontFamily));
 }
 
 /**
  * Get cached variable font info without triggering detection
  */
 export function getCachedVariableFontInfo(fontFamily: string): VariableFontInfo | null {
-  const cached = variableFontCache.get(fontFamily);
-  if (cached && Date.now() - (cached as any).timestamp < CACHE_DURATION) {
-    return { ...cached, cached: true };
+  const cached = getValidCachedInfo(fontFamily);
+  if (cached) {
+    const { timestamp: _timestamp, ...info } = cached;
+    return { ...info, cached: true };
   }
   return null;
 }
@@ -380,14 +396,15 @@ export async function getVariableFontInfoFromMetadata(
 ): Promise<VariableFontInfo> {
   const normalizedAxes = normalizeAxesFromMetadata(axes);
   if (normalizedAxes.length > 0) {
-    const info: VariableFontInfo = {
+    const info: CachedVariableFontInfo = {
       isVariable: true,
       axes: normalizedAxes,
       cached: false,
+      timestamp: Date.now(),
     };
-    (info as any).timestamp = Date.now();
     variableFontCache.set(fontFamily, info);
-    return info;
+    const { timestamp: _timestamp, ...publicInfo } = info;
+    return publicInfo;
   }
 
   return getVariableFontInfo(fontFamily);
@@ -406,12 +423,12 @@ export function preloadKnownVariableFonts(): void {
   knownVariableFonts.forEach(fontFamily => {
     const axes = getAxisInfoFromGoogleFonts(fontFamily);
     if (axes) {
-      const info: VariableFontInfo = {
+      const info: CachedVariableFontInfo = {
         isVariable: true,
         axes,
         cached: false,
+        timestamp: Date.now(),
       };
-      (info as any).timestamp = Date.now();
       variableFontCache.set(fontFamily, info);
     }
   });

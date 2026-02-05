@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-interface FontVariant {
+type FontVariant = {
   weight: string;
   style: string;
   url: string;
-}
+};
 
-interface FontData {
+type FontData = {
   family: string;
   variants: FontVariant[];
-}
+};
 
-interface EmbedFontsRequest {
+type EmbedFontsRequest = {
   fonts: Array<{
     family: string;
     weights: string[];
   }>;
-}
+};
 
 export async function POST(request: NextRequest) {
   try {

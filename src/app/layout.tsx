@@ -1,22 +1,6 @@
 import type { Metadata } from 'next';
-import { Fraunces, Spline_Sans, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
 import { PostHogProvider } from './providers';
-
-const bodyFont = Spline_Sans({
-  variable: '--font-body',
-  subsets: ['latin'],
-});
-
-const displayFont = Fraunces({
-  variable: '--font-display',
-  subsets: ['latin'],
-});
-
-const monoFont = Spline_Sans_Mono({
-  variable: '--font-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: 'Glim | Text to Image Creator',
@@ -96,16 +80,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#121826" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
       </head>
-      <body
-        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable} antialiased`}
-      >
+      <body className="antialiased font-sans">
         <PostHogProvider>{children}</PostHogProvider>
       </body>
     </html>

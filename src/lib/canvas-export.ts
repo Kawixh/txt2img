@@ -168,7 +168,9 @@ class CanvasExporter {
   private async renderTextElement(element: TextElement): Promise<void> {
     if (!this.ctx || !this.canvas) return;
 
-    this.ctx.save();
+    const ctx = this.ctx;
+
+    ctx.save();
 
     // Set font properties FIRST (needed for accurate text measurement in wrapText)
     const fontWeight = element.fontWeight ?? 400;
@@ -177,16 +179,16 @@ class CanvasExporter {
         ? `oblique ${element.fontSlant ?? 0}deg`
         : element.fontStyle;
     const fontString = `${fontStyle} ${fontWeight} ${element.fontSize}px "${element.fontFamily}", Arial, sans-serif`;
-    this.ctx.font = fontString;
+    ctx.font = fontString;
 
     console.log(`Font set for text measurement: ${fontString}`);
 
     // Set text color
-    this.ctx.fillStyle = element.color;
+    ctx.fillStyle = element.color;
 
     // Set text rendering properties to match DOM
-    this.ctx.textBaseline = 'top';
-    this.ctx.textAlign = 'left'; // Always use left, handle alignment manually
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left'; // Always use left, handle alignment manually
 
     // Handle word wrapping and multi-line text (font is now set correctly)
     const lines = this.wrapText(
@@ -222,23 +224,34 @@ class CanvasExporter {
       // Apply text alignment within the element width (match DOM behavior)
       const availableWidth = element.width - domPadding * 2;
       if (element.textAlign === 'center') {
-        const textWidth = this.ctx.measureText(line).width;
-        x = startX + (availableWidth - textWidth) / 2;
-      } else if (element.textAlign === 'right') {
-        const textWidth = this.ctx.measureText(line).width;
-        x = startX + (availableWidth - textWidth);
-      }
+      const textWidth = ctx.measureText(line).width;
+      x = startX + (availableWidth - textWidth) / 2;
+    } else if (element.textAlign === 'right') {
+      const textWidth = ctx.measureText(line).width;
+      x = startX + (availableWidth - textWidth);
+    }
 
-      // Render the text
-      this.ctx.fillText(line, x, y);
+    // Render the text
+      ctx.fillText(line, x, y);
 
-      // Add text decoration if specified
-      if (element.textDecoration === 'underline') {
+      const decoration = element.textDecoration;
+      if (decoration?.underline) {
         this.renderUnderline(line, x, y + element.fontSize, element.fontSize);
+      }
+      if (decoration?.strikethrough) {
+        this.renderUnderline(
+          line,
+          x,
+          y + element.fontSize * 0.5,
+          element.fontSize,
+        );
+      }
+      if (decoration?.overline) {
+        this.renderUnderline(line, x, y, element.fontSize);
       }
     });
 
-    this.ctx.restore();
+    ctx.restore();
   }
 
   /**

@@ -5,12 +5,12 @@
 
 import { toPng } from 'html-to-image';
 
-interface ExportOptions {
+type ExportOptions = {
   width: number;
   height: number;
   pixelRatio?: number;
   quality?: number;
-}
+};
 
 class ReliableExporter {
   /**

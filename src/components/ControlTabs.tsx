@@ -10,12 +10,12 @@ import { TextInput } from './TextInput';
 
 type TabId = 'content' | 'styling' | 'layout' | 'background';
 
-interface Tab {
+type Tab = {
   id: TabId;
   label: string;
   icon: ReactNode;
   component: ReactNode;
-}
+};
 
 export function ControlTabs() {
   const [activeTab, setActiveTab] = useState<TabId>('content');

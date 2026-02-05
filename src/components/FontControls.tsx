@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Combobox, ComboboxOption } from '@/components/ui/combobox';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -63,6 +63,11 @@ const FONT_CATEGORIES: Array<{
   { value: 'monospace', label: 'Monospace' },
   { value: 'variable', label: 'Variable Fonts' },
 ];
+
+type FontOption = ComboboxOption & {
+  isVariable?: boolean;
+  axesCount?: number;
+};
 
 export function FontControls() {
   const {
@@ -199,10 +204,10 @@ export function FontControls() {
     normalizeVariantsForLoad,
   ]);
 
-  const fontOptions: ComboboxOption[] = useMemo(() => {
+  const fontOptions = useMemo<FontOption[]>(() => {
     const googleFonts = getFilteredFonts();
 
-    const fallbackOptions = FALLBACK_FONTS.map((font) => ({
+    const fallbackOptions: FontOption[] = FALLBACK_FONTS.map((font) => ({
       value: font,
       label: font,
       category: 'system' as const,
@@ -212,7 +217,7 @@ export function FontControls() {
       return fallbackOptions;
     }
 
-    const googleFontOptions = googleFonts.map((font) => {
+    const googleFontOptions: FontOption[] = googleFonts.map((font) => {
       const cachedInfo = getCachedVariableFontInfo(font.family);
       const axesCount = font.axes?.length || cachedInfo?.axes.length || 0;
 
@@ -375,13 +380,13 @@ export function FontControls() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{option.label}</span>
-                  {(option as any).isVariable && (
+                  {option.isVariable && (
                     <span className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                       <Settings className="h-3 w-3" />
                       Variable
-                      {(option as any).axesCount > 0 && (
+                      {(option.axesCount ?? 0) > 0 && (
                         <span className="text-xs opacity-75">
-                          ({(option as any).axesCount})
+                          ({option.axesCount})
                         </span>
                       )}
                     </span>
