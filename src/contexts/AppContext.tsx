@@ -355,6 +355,13 @@ function createAppStore(): AppStore {
       fontFamily: string,
       options?: { variants?: string[]; axes?: GoogleFont['axes'] },
     ) => {
+      const alreadyLoaded = state.fonts.loadedFonts.has(fontFamily);
+      const hasAxes = Boolean(options?.axes && options.axes.length > 0);
+
+      if (alreadyLoaded && !hasAxes) {
+        return;
+      }
+
       dispatch({
         type: 'SET_FONT_LOADING',
         payload: { loading: true, fontFamily },
@@ -362,7 +369,9 @@ function createAppStore(): AppStore {
 
       try {
         await googleFontsManager.loadFont(fontFamily, options);
-        dispatch({ type: 'ADD_LOADED_FONT', payload: { fontFamily } });
+        if (!alreadyLoaded) {
+          dispatch({ type: 'ADD_LOADED_FONT', payload: { fontFamily } });
+        }
       } catch (error) {
         console.error('Failed to load font:', error);
       } finally {

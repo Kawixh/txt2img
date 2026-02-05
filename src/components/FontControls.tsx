@@ -94,6 +94,27 @@ export function FontControls() {
   const [variableFontAxes, setVariableFontAxes] = useState<FontAxis[]>([]);
   const [isDetectingAxes, setIsDetectingAxes] = useState(false);
 
+  const normalizeVariantsForLoad = useCallback((variants?: string[]) => {
+    if (!variants || variants.length === 0) return undefined;
+    const weights = variants
+      .map((variant) => {
+        const normalized = variant.trim().toLowerCase();
+        if (normalized === 'regular') return '400';
+        if (normalized === 'italic') return '400';
+        const match = normalized.match(/(\d{3})/);
+        return match ? match[1] : null;
+      })
+      .filter(Boolean) as string[];
+
+    if (weights.length === 0) return undefined;
+
+    return Array.from(new Set(weights))
+      .map((weight) => Number(weight))
+      .filter((weight) => Number.isFinite(weight))
+      .sort((a, b) => a - b)
+      .map((weight) => String(weight));
+  }, []);
+
   useEffect(() => {
     if (fontsState.fonts.length === 0 && !fontsState.isLoading) {
       fetchFonts({ sort: 'popularity' });
@@ -151,6 +172,33 @@ export function FontControls() {
     selectedFontMeta?.axes,
   ]);
 
+  useEffect(() => {
+    if (!selectedElement || variableFontAxes.length === 0) return;
+    if (!selectedFontMeta) return;
+
+    const axesForLoad: GoogleFont['axes'] = variableFontAxes.map((axis) => ({
+      tag: axis.tag,
+      min: axis.min,
+      max: axis.max,
+      defaultValue: axis.default,
+    }));
+
+    const variantsForLoad = normalizeVariantsForLoad(selectedFontMeta.variants);
+
+    loadFont(selectedElement.fontFamily, {
+      axes: axesForLoad,
+      variants: variantsForLoad,
+    }).catch((error) => {
+      console.warn('Failed to load variable font axes:', error);
+    });
+  }, [
+    loadFont,
+    selectedElement,
+    selectedFontMeta,
+    variableFontAxes,
+    normalizeVariantsForLoad,
+  ]);
+
   const fontOptions: ComboboxOption[] = useMemo(() => {
     const googleFonts = getFilteredFonts();
 
@@ -204,7 +252,11 @@ export function FontControls() {
     const fontMeta = fontsState.fonts.find((f) => f.family === fontFamily);
     if (isGoogleFont && !fontsState.loadedFonts.has(fontFamily)) {
       try {
-        await loadFont(fontFamily, { axes: fontMeta?.axes });
+        const variantsForLoad = normalizeVariantsForLoad(fontMeta?.variants);
+        await loadFont(fontFamily, {
+          axes: fontMeta?.axes,
+          variants: variantsForLoad,
+        });
       } catch (error) {
         console.error('Failed to load font:', error);
       }

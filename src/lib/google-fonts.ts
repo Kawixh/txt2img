@@ -168,99 +168,234 @@ class GoogleFontsManager {
       '400',
     ],
   ): Promise<void> {
-    if (this.loadedFonts.has(fontFamily)) {
-      return;
-    }
-
     return new Promise((resolve, reject) => {
       try {
         const resolvedOptions = Array.isArray(options)
           ? { variants: options, axes: undefined }
           : options;
 
-        const variants = resolvedOptions?.variants ?? ['400'];
-        const axes = resolvedOptions?.axes?.filter(
-          (axis) =>
-            axis &&
-            typeof axis.tag === 'string' &&
-            Number.isFinite(axis.min) &&
-            Number.isFinite(axis.max),
-        );
+        const variants = this.normalizeVariants(resolvedOptions?.variants);
+        const axes =
+          resolvedOptions?.axes
+            ?.filter(
+              (axis) =>
+                axis &&
+                typeof axis.tag === 'string' &&
+                Number.isFinite(axis.min) &&
+                Number.isFinite(axis.max),
+            )
+            .map((axis) => ({
+              ...axis,
+              min: Number(axis.min),
+              max: Number(axis.max),
+            })) ?? [];
 
-        const fontUrl = axes && axes.length > 0
-          ? this.buildVariableFontUrl(fontFamily, axes)
-          : this.buildStaticFontUrl(fontFamily, variants);
+        const urlsToTry: string[] = [];
+        if (axes.length > 0) {
+          urlsToTry.push(this.buildVariableFontUrl(fontFamily, axes));
 
-        // Check if font is already loaded
-        const existingLink = document.querySelector(
-          `link[href="${fontUrl}"]`,
-        ) as HTMLLinkElement;
-        if (existingLink) {
-          // Even if link exists, verify font is actually ready
-          this.verifyFontReady(fontFamily)
-            .then(() => {
-              this.loadedFonts.add(fontFamily);
-              resolve();
-            })
-            .catch(() => {
-              // If verification fails, continue with normal loading
-              this.loadedFonts.add(fontFamily);
-              resolve();
-            });
-          return;
+          const fallbackAxes = this.pickFallbackAxes(axes);
+          if (fallbackAxes.length > 0) {
+            const fallbackUrl = this.buildVariableFontUrl(
+              fontFamily,
+              fallbackAxes,
+            );
+            if (fallbackUrl !== urlsToTry[0]) {
+              urlsToTry.push(fallbackUrl);
+            }
+          }
+
+          urlsToTry.push(this.buildStaticFontUrl(fontFamily, variants));
+        } else {
+          urlsToTry.push(this.buildStaticFontUrl(fontFamily, variants));
         }
 
-        // Create and inject font link
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = fontUrl;
+        const uniqueUrls = Array.from(new Set(urlsToTry));
 
-        link.onload = () => {
-          // Wait for font to be actually ready after CSS loads
-          this.verifyFontReady(fontFamily)
-            .then(() => {
-              this.loadedFonts.add(fontFamily);
+        const tryLoad = (index: number) => {
+          if (index >= uniqueUrls.length) {
+            reject(new Error(`Failed to load font: ${fontFamily}`));
+            return;
+          }
 
-              // Update cache to mark font as loaded
-              const cacheItem = this.fontsCache.get(fontFamily);
-              if (cacheItem) {
-                cacheItem.loaded = true;
-              }
+          const fontUrl = uniqueUrls[index];
 
-              resolve();
-            })
-            .catch((error) => {
-              console.warn(
-                `Font verification failed for ${fontFamily}, but continuing:`,
-                error,
-              );
-              this.loadedFonts.add(fontFamily);
-              resolve();
-            });
+          if (this.loadedFonts.has(fontUrl)) {
+            resolve();
+            return;
+          }
+
+          const existingLink = document.querySelector(
+            `link[href="${fontUrl}"]`,
+          ) as HTMLLinkElement | null;
+
+          const markLoaded = () => {
+            this.loadedFonts.add(fontUrl);
+            const cacheItem = this.fontsCache.get(fontFamily);
+            if (cacheItem) {
+              cacheItem.loaded = true;
+            }
+          };
+
+          const createAndLoadLink = () => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = fontUrl;
+
+            link.onload = () => {
+              this.verifyFontReady(fontFamily)
+                .then(() => {
+                  markLoaded();
+                  resolve();
+                })
+                .catch((error) => {
+                  console.warn(
+                    `Font verification failed for ${fontFamily}, retrying fallback:`,
+                    error,
+                  );
+                  link.remove();
+                  tryLoad(index + 1);
+                });
+            };
+
+            link.onerror = () => {
+              link.remove();
+              tryLoad(index + 1);
+            };
+
+            document.head.appendChild(link);
+          };
+
+          if (existingLink) {
+            this.verifyFontReady(fontFamily)
+              .then(() => {
+                markLoaded();
+                resolve();
+              })
+              .catch(() => {
+                existingLink.remove();
+                createAndLoadLink();
+              });
+            return;
+          }
+
+          createAndLoadLink();
         };
 
-        link.onerror = () => {
-          reject(new Error(`Failed to load font: ${fontFamily}`));
-        };
-
-        document.head.appendChild(link);
+        tryLoad(0);
       } catch (error) {
         reject(error);
       }
     });
   }
 
+  private normalizeVariants(variants?: string[]): string[] {
+    if (!variants || variants.length === 0) return ['400'];
+
+    const weights = variants
+      .map((variant) => {
+        const normalized = variant.trim().toLowerCase();
+        if (normalized === 'regular') return '400';
+        if (normalized === 'italic') return '400';
+        const match = normalized.match(/(\d{3})/);
+        return match ? match[1] : null;
+      })
+      .filter(Boolean) as string[];
+
+    if (weights.length === 0) return ['400'];
+
+    const unique = Array.from(new Set(weights))
+      .map((weight) => Number(weight))
+      .filter((weight) => Number.isFinite(weight))
+      .sort((a, b) => a - b)
+      .map((weight) => String(weight));
+
+    return unique.length > 0 ? unique : ['400'];
+  }
+
+  private pickFallbackAxes(axes: GoogleFont['axes']): GoogleFont['axes'] {
+    if (!axes || axes.length === 0) return [];
+
+    const axisMap = new Map<string, GoogleFont['axes'][number]>();
+    axes.forEach((axis) => {
+      if (axis?.tag) {
+        axisMap.set(axis.tag, axis);
+      }
+    });
+
+    const preferredTags = ['ital', 'opsz', 'wght'];
+    const selected = preferredTags
+      .map((tag) => axisMap.get(tag))
+      .filter(Boolean) as GoogleFont['axes'];
+
+    if (selected.length > 0) {
+      return selected;
+    }
+
+    return axes.slice(0, 1);
+  }
+
   private buildVariableFontUrl(fontFamily: string, axes: GoogleFont['axes']) {
-    const axisTags = axes.map((axis) => axis.tag);
-    const axisRanges = axes.map((axis) => `${axis.min}..${axis.max}`);
+    const axisMap = new Map<string, GoogleFont['axes'][number]>();
+    axes.forEach((axis) => {
+      if (axis?.tag) {
+        const min = Number(axis.min);
+        const max = Number(axis.max);
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+        axisMap.set(axis.tag, {
+          ...axis,
+          min: min,
+          max: max,
+        });
+      }
+    });
+
+    const axisTags = Array.from(axisMap.keys()).sort((a, b) =>
+      a.localeCompare(b, 'en', { sensitivity: 'base' }),
+    );
+
+    if (axisTags.length === 0) {
+      return this.buildStaticFontUrl(fontFamily, ['400']);
+    }
+
+    const italAxis = axisMap.get('ital');
+    const formatRange = (axis: GoogleFont['axes'][number]) => {
+      const min = Math.min(axis.min, axis.max);
+      const max = Math.max(axis.min, axis.max);
+      return min === max ? `${min}` : `${min}..${max}`;
+    };
+
+    const buildAxisRow = (italValue?: number) =>
+      axisTags
+        .map((tag) => {
+          if (tag === 'ital') {
+            return `${italValue ?? 0}`;
+          }
+          const axis = axisMap.get(tag);
+          return axis ? formatRange(axis) : '';
+        })
+        .filter((value) => value.length > 0)
+        .join(',');
+
+    const axisValues = italAxis
+      ? (() => {
+          const italMin = Math.min(italAxis.min, italAxis.max);
+          const italMax = Math.max(italAxis.min, italAxis.max);
+          const values = italMin === italMax ? [italMin] : [italMin, italMax];
+          return values.map((value) => buildAxisRow(value));
+        })()
+      : [buildAxisRow()];
+
+    const axisPart = `:${axisTags.join(',')}@${axisValues.join(';')}`;
 
     return `https://fonts.googleapis.com/css2?family=${encodeURIComponent(
       fontFamily,
-    )}:${axisTags.join(',')}@${axisRanges.join(',')}&display=swap`;
+    )}${axisPart}&display=swap`;
   }
 
   private buildStaticFontUrl(fontFamily: string, variants: string[]) {
-    const variantsString = variants.join(';');
+    const normalized = this.normalizeVariants(variants);
+    const variantsString = normalized.join(';');
     return `https://fonts.googleapis.com/css2?family=${encodeURIComponent(
       fontFamily,
     )}:wght@${variantsString}&display=swap`;
@@ -298,7 +433,10 @@ class GoogleFontsManager {
   }
 
   isFontLoaded(fontFamily: string): boolean {
-    return this.loadedFonts.has(fontFamily);
+    const encodedFamily = encodeURIComponent(fontFamily);
+    return Array.from(this.loadedFonts).some((url) =>
+      url.includes(`family=${encodedFamily}`),
+    );
   }
 
   async ensureAllFontsReady(fontFamilies: string[]): Promise<void> {

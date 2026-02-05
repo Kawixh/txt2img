@@ -185,6 +185,9 @@ function TextElementComponent({ elementId }: TextElementProps) {
         .map(([axis, value]) => `"${axis}" ${value}`)
         .join(', ');
     }
+    const hasOpticalAxis =
+      element.fontVariationSettings &&
+      Object.prototype.hasOwnProperty.call(element.fontVariationSettings, 'opsz');
 
     const fontStyleValue: React.CSSProperties['fontStyle'] =
       element.fontStyle === 'oblique'
@@ -197,6 +200,7 @@ function TextElementComponent({ elementId }: TextElementProps) {
       fontWeight: element.fontWeight,
       fontStyle: fontStyleValue,
       fontStretch: element.fontStretch ? `${element.fontStretch}%` : undefined,
+      fontOpticalSizing: hasOpticalAxis ? 'none' : undefined,
       textDecoration,
       textTransform: element.textTransform || 'none',
       lineHeight: element.lineHeight || 1.2,
