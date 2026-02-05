@@ -8,13 +8,11 @@ export default function Home() {
     <AppProvider>
       <div className="bg-background container-safe flex min-h-screen flex-col">
         {/* Top Navigation Bar */}
-        <header className="glass-panel border-border/20 transition-smooth border-0 border-b">
-          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <header className="">
+          <div className="mx-auto px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-3xl font-bold text-transparent">
-                  Glim ✨
-                </h1>
+                <h1 className="text-3xl font-bold text-purple-600">Glim ✨</h1>
                 <p className="text-muted-foreground word-wrap text-sm">
                   Turn words into pure visual energy • No cap fr 🔥
                 </p>

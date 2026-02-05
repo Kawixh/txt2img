@@ -9,9 +9,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 hover:shadow-lg hover:shadow-purple-500/25 transform hover:-translate-y-0.5',
+          'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-500/50 transform hover:-translate-y-0.5 animate-glow',
         destructive:
-          'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 hover:shadow-lg hover:shadow-red-500/25 transform hover:-translate-y-0.5',
+          'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-0.5 hover:animate-glow',
         outline:
           'border-2 border-border/50 bg-background/50 backdrop-blur-sm hover:bg-accent/50 hover:text-accent-foreground hover:border-purple-500/50 hover:shadow-md transform hover:-translate-y-0.5',
         secondary:
@@ -19,8 +19,8 @@ const buttonVariants = cva(
         ghost:
           'hover:bg-accent/50 hover:text-accent-foreground rounded-xl hover:shadow-sm transform hover:-translate-y-0.5',
         link: 'text-purple-600 underline-offset-4 hover:underline hover:text-purple-700',
-        gradient:
-          'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 hover:shadow-lg hover:shadow-blue-500/25 transform hover:-translate-y-0.5',
+        solid:
+          'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/50 transform hover:-translate-y-0.5 hover:animate-glow',
         glass:
           'glass-panel text-foreground hover:bg-white/10 dark:hover:bg-black/10 transform hover:-translate-y-0.5 hover:shadow-lg',
       },

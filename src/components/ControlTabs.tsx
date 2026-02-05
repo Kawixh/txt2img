@@ -61,7 +61,7 @@ export function ControlTabs() {
             transition={{ delay: index * 0.1 }}
           >
             <Button
-              variant={activeTab === tab.id ? 'gradient' : 'glass'}
+              variant={activeTab === tab.id ? 'solid' : 'glass'}
               size="sm"
               onClick={() => setActiveTab(tab.id)}
               className="group relative flex h-16 flex-col gap-2 text-xs"

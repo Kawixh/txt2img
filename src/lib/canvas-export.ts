@@ -16,7 +16,8 @@ class CanvasExporter {
 
     if (!this.canvas) {
       this.canvas = document.createElement('canvas');
-      const ctx = this.canvas.getContext('2d');
+      // Get context with alpha support for transparent backgrounds
+      const ctx = this.canvas.getContext('2d', { alpha: true });
       if (!ctx) {
         throw new Error('Could not get 2D canvas context');
       }
@@ -42,8 +43,14 @@ class CanvasExporter {
     this.canvas.width = canvasSettings.width;
     this.canvas.height = canvasSettings.height;
 
-    // Clear canvas
+    // Ensure canvas is transparent by default
+    this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.globalAlpha = 1.0;
+    
+    // Clear canvas to transparent
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    console.log('Canvas initialized with dimensions:', this.canvas.width, 'x', this.canvas.height, 'and transparent background');
 
     // Apply background
     await this.renderBackground(canvasSettings.background);
@@ -80,9 +87,9 @@ class CanvasExporter {
         break;
 
       case 'gradient':
-        console.log('Rendering gradient background');
-        await this.renderGradientBackground(background);
-        console.log('Gradient background rendered');
+        console.log('Rendering gradient as solid with glow effect');
+        await this.renderSolidWithGlow(background);
+        console.log('Solid background with glow rendered');
         break;
 
       case 'pattern':
@@ -93,68 +100,64 @@ class CanvasExporter {
 
       case 'transparent':
         console.log('Rendering transparent background (no fill)');
+        // Do absolutely NOTHING for transparent background
+        // The canvas should already be transparent from initialization
+        console.log('Transparent background: skipping any fills - canvas remains transparent');
         break;
 
       default:
-        console.log(`Unknown background type: ${(background as any).type}`);
+        console.log(`Unknown background type: ${(background as { type: string }).type}`);
         break;
     }
   }
 
   /**
-   * Renders gradient background
+   * Renders solid background with glow effect (replaces gradient)
    */
-  private async renderGradientBackground(
+  private async renderSolidWithGlow(
     gradient: BackgroundConfig & { type: 'gradient' },
   ): Promise<void> {
     if (!this.ctx || !this.canvas) return;
 
-    let canvasGradient: CanvasGradient;
-
-    console.log(`Gradient details:`, {
-      direction: gradient.direction,
-      from: gradient.from,
-      to: gradient.to,
-      via: gradient.via,
+    console.log(`Solid with glow details:`, {
+      primaryColor: gradient.from,
+      secondaryColor: gradient.to,
     });
 
-    // Map gradient directions to canvas coordinates
-    const directionMap: Record<
-      string,
-      { x1: number; y1: number; x2: number; y2: number }
-    > = {
-      'to-r': { x1: 0, y1: 0, x2: this.canvas.width, y2: 0 },
-      'to-l': { x1: this.canvas.width, y1: 0, x2: 0, y2: 0 },
-      'to-b': { x1: 0, y1: 0, x2: 0, y2: this.canvas.height },
-      'to-t': { x1: 0, y1: this.canvas.height, x2: 0, y2: 0 },
-      'to-br': { x1: 0, y1: 0, x2: this.canvas.width, y2: this.canvas.height },
-      'to-bl': { x1: this.canvas.width, y1: 0, x2: 0, y2: this.canvas.height },
-      'to-tr': { x1: 0, y1: this.canvas.height, x2: this.canvas.width, y2: 0 },
-      'to-tl': { x1: this.canvas.width, y1: this.canvas.height, x2: 0, y2: 0 },
-    };
-
-    const coords = directionMap[gradient.direction] || directionMap['to-r'];
-    console.log(`Using gradient coordinates:`, coords);
-
-    canvasGradient = this.ctx.createLinearGradient(
-      coords.x1,
-      coords.y1,
-      coords.x2,
-      coords.y2,
-    );
-
-    // Add color stops
-    console.log(`Adding color stops: 0=${gradient.from}, 1=${gradient.to}`);
-    canvasGradient.addColorStop(0, gradient.from);
-    if (gradient.via) {
-      console.log(`Adding via color stop: 0.5=${gradient.via}`);
-      canvasGradient.addColorStop(0.5, gradient.via);
-    }
-    canvasGradient.addColorStop(1, gradient.to);
-
-    this.ctx.fillStyle = canvasGradient;
+    // Use the primary color as the base
+    this.ctx.fillStyle = gradient.from;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    console.log('Gradient fill applied to canvas');
+    
+    // Create a subtle glow effect by overlaying a radial gradient
+    const centerX = this.canvas.width / 2;
+    const centerY = this.canvas.height / 2;
+    const radius = Math.max(this.canvas.width, this.canvas.height) * 0.7;
+    
+    const glowGradient = this.ctx.createRadialGradient(
+      centerX, centerY, 0,
+      centerX, centerY, radius
+    );
+    
+    // Convert hex colors to rgba for proper canvas rendering
+    const fromRgba = hexToRgba(gradient.from, 0.25);
+    const toRgba = hexToRgba(gradient.to, 0.125);
+    
+    glowGradient.addColorStop(0, fromRgba);
+    glowGradient.addColorStop(0.5, toRgba);
+    glowGradient.addColorStop(1, 'transparent');
+    
+    // Apply additional shadow for better glow effect
+    this.ctx.shadowBlur = 20;
+    this.ctx.shadowColor = gradient.to;
+    
+    this.ctx.fillStyle = glowGradient;
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    // Reset shadow after glow effect
+    this.ctx.shadowBlur = 0;
+    this.ctx.shadowColor = 'transparent';
+    
+    console.log('Solid background with glow effect applied to canvas');
   }
 
   /**
@@ -221,13 +224,13 @@ class CanvasExporter {
       element.wordWrap,
     );
     console.log(`Text wrapped into ${lines.length} lines:`, lines);
-    const lineHeight = element.fontSize * 1.2; // Standard line height
+    const lineHeight = element.fontSize * (element.lineHeight || 1.2); // Use element's line height or default to 1.2
 
     // Calculate starting position to match DOM rendering
     // DOM uses hardcoded 4px padding, so we match that instead of element.paddingX/Y
     const domPadding = 4;
-    let startX = element.x + domPadding;
-    let startY = element.y + domPadding;
+    const startX = element.x + domPadding;
+    const startY = element.y + domPadding;
 
     console.log(`Canvas positioning for "${element.content}":`, {
       elementX: element.x,
@@ -367,6 +370,24 @@ class CanvasExporter {
     if (this.ctx && this.canvas) {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
+  }
+
+  /**
+   * Ensures canvas has transparent background for PNG export
+   */
+  private ensureTransparentCanvas(): void {
+    if (!this.canvas || !this.ctx) return;
+    
+    // Reset global composite operation to ensure proper transparency
+    this.ctx.globalCompositeOperation = 'source-over';
+    
+    // Make sure the canvas itself doesn't have a background
+    this.canvas.style.backgroundColor = 'transparent';
+    
+    // Ensure alpha blending is enabled
+    this.ctx.globalAlpha = 1.0;
+    
+    console.log('Canvas configured for true transparency - no background will be drawn');
   }
 }
 

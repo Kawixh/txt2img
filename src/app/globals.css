@@ -101,10 +101,15 @@
   --background: oklch(0.995 0.002 280);
   --foreground: oklch(0.09 0.005 0);
   
-  --gradient-purple: linear-gradient(135deg, oklch(0.7 0.15 280) 0%, oklch(0.6 0.2 320) 100%);
-  --gradient-blue: linear-gradient(135deg, oklch(0.7 0.15 240) 0%, oklch(0.6 0.2 200) 100%);
-  --gradient-green: linear-gradient(135deg, oklch(0.7 0.15 150) 0%, oklch(0.6 0.2 120) 100%);
-  --gradient-orange: linear-gradient(135deg, oklch(0.7 0.15 60) 0%, oklch(0.6 0.2 40) 100%);
+  --solid-purple: oklch(0.65 0.18 300);
+  --solid-blue: oklch(0.65 0.18 220);
+  --solid-green: oklch(0.65 0.18 135);
+  --solid-orange: oklch(0.65 0.18 50);
+  
+  --glow-purple: 0 0 20px oklch(0.65 0.18 300 / 0.4);
+  --glow-blue: 0 0 20px oklch(0.65 0.18 220 / 0.4);
+  --glow-green: 0 0 20px oklch(0.65 0.18 135 / 0.4);
+  --glow-orange: 0 0 20px oklch(0.65 0.18 50 / 0.4);
   
   --glass-bg: rgba(255, 255, 255, 0.08);
   --glass-border: rgba(255, 255, 255, 0.12);
@@ -202,20 +207,24 @@
     border: 1px solid var(--glass-border);
   }
 
-  .gradient-purple {
-    background: var(--gradient-purple);
+  .solid-purple {
+    background: var(--solid-purple);
+    box-shadow: var(--glow-purple);
   }
 
-  .gradient-blue {
-    background: var(--gradient-blue);
+  .solid-blue {
+    background: var(--solid-blue);
+    box-shadow: var(--glow-blue);
   }
 
-  .gradient-green {
-    background: var(--gradient-green);
+  .solid-green {
+    background: var(--solid-green);
+    box-shadow: var(--glow-green);
   }
 
-  .gradient-orange {
-    background: var(--gradient-orange);
+  .solid-orange {
+    background: var(--solid-orange);
+    box-shadow: var(--glow-orange);
   }
 
   .animate-float {
@@ -248,8 +257,14 @@
   }
 
   @keyframes glow {
-    from { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-    to { box-shadow: 0 0 30px rgba(139, 92, 246, 0.6); }
+    from { 
+      box-shadow: 0 0 20px oklch(0.65 0.18 280 / 0.3);
+      filter: brightness(1);
+    }
+    to { 
+      box-shadow: 0 0 40px oklch(0.65 0.18 280 / 0.8), 0 0 60px oklch(0.65 0.18 280 / 0.4);
+      filter: brightness(1.3);
+    }
   }
 
   @keyframes bounceSubtle {

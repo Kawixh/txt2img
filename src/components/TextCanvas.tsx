@@ -26,23 +26,18 @@ export function TextCanvas() {
       case 'transparent':
         return {
           backgroundColor: 'transparent',
-          backgroundImage: `
-            linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
-            linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
-            linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)
-          `,
+          backgroundImage: 'radial-gradient(circle at 25% 25%, #f0f0f0 2px, transparent 2px), radial-gradient(circle at 75% 75%, #f0f0f0 2px, transparent 2px)',
           backgroundSize: '20px 20px',
-          backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+          backgroundPosition: '0 0, 10px 10px',
         };
 
       case 'gradient':
-        const direction = background.direction.replace('to-', 'to ');
-        const gradientStops = background.via
-          ? `${background.from}, ${background.via}, ${background.to}`
-          : `${background.from}, ${background.to}`;
+        // Convert gradient to solid color with glow effect
+        const primaryColor = background.from;
         return {
-          background: `linear-gradient(${direction}, ${gradientStops})`,
+          backgroundColor: primaryColor,
+          boxShadow: `0 0 20px ${primaryColor}40, inset 0 0 20px ${primaryColor}20`,
+          filter: 'brightness(1.1)',
         };
 
       case 'pattern':
@@ -108,7 +103,7 @@ export function TextCanvas() {
             <div className="text-center animate-bounce-subtle">
               <div className="text-6xl mb-4 animate-float">✨</div>
               <p className="text-lg text-muted-foreground font-medium word-wrap">
-                Click "Add Text" to start creating
+                Click &quot;Add Text&quot; to start creating
               </p>
               <p className="text-sm text-muted-foreground/70 mt-2 word-wrap">
                 Your canvas awaits some magic!
@@ -117,7 +112,7 @@ export function TextCanvas() {
           </div>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-smooth pointer-events-none" />
+        <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-smooth pointer-events-none animate-glow" />
       </div>
     </div>
   );

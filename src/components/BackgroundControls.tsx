@@ -14,18 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import { useApp } from '@/contexts/AppContext';
 import { PATTERN_DEFINITIONS, getPatternById } from '@/lib/patterns';
 import { BackgroundType } from '@/types';
-import { Palette } from 'lucide-react';
-
-const GRADIENT_DIRECTIONS = [
-  { value: 'to-r', label: 'Right' },
-  { value: 'to-br', label: 'Bottom Right' },
-  { value: 'to-b', label: 'Bottom' },
-  { value: 'to-bl', label: 'Bottom Left' },
-  { value: 'to-l', label: 'Left' },
-  { value: 'to-tl', label: 'Top Left' },
-  { value: 'to-t', label: 'Top' },
-  { value: 'to-tr', label: 'Top Right' },
-] as const;
+// Removed unused imports and constants
 
 export function BackgroundControls() {
   const { state, updateBackground, updateCanvasSettings } = useApp();
@@ -93,39 +82,12 @@ export function BackgroundControls() {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Gradient Direction</Label>
-              <Select
-                value={background.direction}
-                onValueChange={(value: string) =>
-                  updateBackground({
-                    ...background,
-                    direction: value as
-                      | 'to-r'
-                      | 'to-br'
-                      | 'to-b'
-                      | 'to-bl'
-                      | 'to-l'
-                      | 'to-tl'
-                      | 'to-t'
-                      | 'to-tr',
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {GRADIENT_DIRECTIONS.map((dir) => (
-                    <SelectItem key={dir.value} value={dir.value}>
-                      {dir.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Glow Style</Label>
+              <p className="text-sm text-muted-foreground">This creates a solid color with a subtle glow effect instead of a gradient.</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="gradient-from">From Color</Label>
+              <Label htmlFor="gradient-from">Primary Color</Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="gradient-from"
@@ -148,7 +110,7 @@ export function BackgroundControls() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="gradient-to">To Color</Label>
+              <Label htmlFor="gradient-to">Glow Color</Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="gradient-to"
@@ -168,32 +130,7 @@ export function BackgroundControls() {
                   className="flex-1"
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="gradient-via">Via Color (Optional)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="gradient-via"
-                  type="color"
-                  value={background.via || '#ffffff'}
-                  onChange={(e) =>
-                    updateBackground({ ...background, via: e.target.value })
-                  }
-                  className="h-10 w-12 rounded border p-1"
-                />
-                <Input
-                  value={background.via || ''}
-                  onChange={(e) =>
-                    updateBackground({
-                      ...background,
-                      via: e.target.value || undefined,
-                    })
-                  }
-                  placeholder="Optional middle color"
-                  className="flex-1"
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">This color will be used for the glow effect around the primary color.</p>
             </div>
           </div>
         );
@@ -373,7 +310,7 @@ export function BackgroundControls() {
             size="sm"
             onClick={() => handleBackgroundTypeChange('gradient')}
           >
-            Gradient
+            Glow
           </Button>
           <Button
             variant={background.type === 'pattern' ? 'default' : 'outline'}
