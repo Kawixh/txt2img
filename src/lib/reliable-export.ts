@@ -288,6 +288,13 @@ class ReliableExporter {
   }
 
   private shouldIncludeNode(node: HTMLElement): boolean {
+    if (
+      node.getAttribute('data-export-ignore') === 'true' ||
+      node.closest('[data-export-ignore="true"]')
+    ) {
+      return false;
+    }
+
     const tagName = node.tagName?.toLowerCase();
     return !['script', 'noscript', 'meta', 'title', 'link'].includes(tagName);
   }

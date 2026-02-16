@@ -24,6 +24,7 @@ function TextElementComponent({
   const isSelected = useAppStore(
     (state) => state.selectedElementId === elementId,
   );
+  const isExporting = useAppStore((state) => state.exportStatus === 'loading');
   const canvasSize = useAppStore(
     (state) => ({
       width: state.canvasSettings.width,
@@ -41,36 +42,7 @@ function TextElementComponent({
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [localContent, setLocalContent] = useState('');
   const elementRef = useRef<HTMLDivElement>(null);
-  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (element) {
-      setLocalContent(element.content);
-    }
-  }, [element?.content]);
-
-  const debouncedUpdateContent = useCallback(
-    (content: string) => {
-      if (!element) return;
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      debounceTimeoutRef.current = setTimeout(() => {
-        updateTextElement(element.id, { content });
-      }, 300);
-    },
-    [element, updateTextElement],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const getCanvasPoint = useCallback(
     (clientX: number, clientY: number) => {
@@ -98,19 +70,22 @@ function TextElementComponent({
     selectElement(element.id);
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !element) return;
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || !element) return;
 
-    const point = getCanvasPoint(e.clientX, e.clientY);
-    const newX = point.x - dragStart.x;
-    const newY = point.y - dragStart.y;
+      const point = getCanvasPoint(e.clientX, e.clientY);
+      const newX = point.x - dragStart.x;
+      const newY = point.y - dragStart.y;
 
-    updateTextElement(element.id, { x: newX, y: newY });
-  };
+      updateTextElement(element.id, { x: newX, y: newY });
+    },
+    [dragStart.x, dragStart.y, element, getCanvasPoint, isDragging, updateTextElement],
+  );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   useEffect(() => {
     if (isDragging) {
@@ -121,13 +96,12 @@ function TextElementComponent({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, dragStart, element, getCanvasPoint, updateTextElement]);
+  }, [handleMouseMove, handleMouseUp, isDragging]);
 
   const handleContentChange = (event: React.FormEvent<HTMLDivElement>) => {
     if (!element) return;
     const newContent = event.currentTarget.textContent || '';
-    setLocalContent(newContent);
-    debouncedUpdateContent(newContent);
+    updateTextElement(element.id, { content: newContent });
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -186,11 +160,7 @@ function TextElementComponent({
     }
   }, [
     calculateElementPosition,
-    element?.x,
-    element?.y,
-    element?.id,
-    element?.content,
-    element?.wordWrap,
+    element,
     updateTextElement,
   ]);
 
@@ -246,7 +216,9 @@ function TextElementComponent({
       userSelect: isDragging ? 'none' : 'text',
       outline: 'none',
       border: isSelected
-        ? '1px dashed var(--primary)'
+        ? isExporting
+          ? '1px dashed transparent'
+          : '1px dashed var(--primary)'
         : '1px dashed transparent',
       padding: '6px 8px',
       borderRadius: '8px',
@@ -260,6 +232,7 @@ function TextElementComponent({
   }, [
     element,
     isDragging,
+    isExporting,
     isSelected,
   ]);
 
@@ -271,7 +244,7 @@ function TextElementComponent({
         ref={elementRef}
         style={fontStyle}
         className={isLoadingFont ? 'text-loading' : ''}
-        data-text={localContent}
+        data-text={element.content}
         onMouseDown={handleMouseDown}
         onClick={() => selectElement(element.id)}
         contentEditable
@@ -279,11 +252,12 @@ function TextElementComponent({
         onInput={handleContentChange}
         onBlur={handleContentChange}
       >
-        {localContent}
+        {element.content}
       </div>
-      {isSelected && (
+      {isSelected && !isExporting && (
         <button
           onClick={handleDelete}
+          data-export-ignore="true"
           className="absolute right-0 top-0 max-w-min -translate-y-2 translate-x-2 rounded-full border border-border/70 bg-card p-1 text-foreground shadow-sm transition hover:border-destructive hover:text-destructive"
           style={{
             left: `${element.x + 100}px`,

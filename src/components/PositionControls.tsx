@@ -80,6 +80,11 @@ export function PositionControls() {
             updateSelectedElement({ wordWrap: !selectedElement.wordWrap })
           }
           className="flex w-full items-center gap-2"
+          title={
+            selectedElement.wordWrap
+              ? 'Disable wrapping and keep text on one line'
+              : 'Enable wrapping inside the text width'
+          }
         >
           {selectedElement.wordWrap ? (
             <ToggleRight size={16} />
@@ -102,6 +107,7 @@ export function PositionControls() {
             size="sm"
             onClick={() => handlePresetChange('manual')}
             className="w-full"
+            title="Manually move text by dragging or using X/Y controls"
           >
             Manual Positioning
           </Button>

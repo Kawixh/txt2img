@@ -255,8 +255,6 @@ export function FontControls() {
 
     return uniqueOptions;
   }, [
-    fontsState.fonts,
-    fontsState.searchQuery,
     fontsState.selectedCategory,
     getFilteredFonts,
   ]);
@@ -459,6 +457,8 @@ export function FontControls() {
             onClick={() =>
               updateSelectedElement({ fontWeight: isBold ? 400 : 700 })
             }
+            title={isBold ? 'Set regular weight' : 'Set bold weight'}
+            aria-label={isBold ? 'Set regular weight' : 'Set bold weight'}
           >
             <Bold size={16} />
           </Button>
@@ -471,6 +471,8 @@ export function FontControls() {
                 fontSlant: 0,
               })
             }
+            title={isItalic ? 'Disable italic' : 'Enable italic'}
+            aria-label={isItalic ? 'Disable italic' : 'Enable italic'}
           >
             <Italic size={16} />
           </Button>
@@ -488,6 +490,16 @@ export function FontControls() {
                     false,
                 },
               })
+            }
+            title={
+              selectedElement.textDecoration?.underline
+                ? 'Remove underline'
+                : 'Underline text'
+            }
+            aria-label={
+              selectedElement.textDecoration?.underline
+                ? 'Remove underline'
+                : 'Underline text'
             }
           >
             <Underline size={16} />
@@ -509,6 +521,16 @@ export function FontControls() {
                 },
               })
             }
+            title={
+              selectedElement.textDecoration?.strikethrough
+                ? 'Remove strikethrough'
+                : 'Strike through text'
+            }
+            aria-label={
+              selectedElement.textDecoration?.strikethrough
+                ? 'Remove strikethrough'
+                : 'Strike through text'
+            }
           >
             <Strikethrough size={16} />
           </Button>
@@ -527,6 +549,16 @@ export function FontControls() {
                 },
               })
             }
+            title={
+              selectedElement.textDecoration?.overline
+                ? 'Remove overline'
+                : 'Add overline'
+            }
+            aria-label={
+              selectedElement.textDecoration?.overline
+                ? 'Remove overline'
+                : 'Add overline'
+            }
           >
             <Minus size={16} />
           </Button>
@@ -540,6 +572,8 @@ export function FontControls() {
             variant={selectedElement.textAlign === 'left' ? 'default' : 'outline'}
             size="sm"
             onClick={() => updateSelectedElement({ textAlign: 'left' })}
+            title="Align left"
+            aria-label="Align left"
           >
             <AlignLeft size={16} />
           </Button>
@@ -549,6 +583,8 @@ export function FontControls() {
             }
             size="sm"
             onClick={() => updateSelectedElement({ textAlign: 'center' })}
+            title="Align center"
+            aria-label="Align center"
           >
             <AlignCenter size={16} />
           </Button>
@@ -558,6 +594,8 @@ export function FontControls() {
             }
             size="sm"
             onClick={() => updateSelectedElement({ textAlign: 'right' })}
+            title="Align right"
+            aria-label="Align right"
           >
             <AlignRight size={16} />
           </Button>
@@ -567,6 +605,8 @@ export function FontControls() {
             }
             size="sm"
             onClick={() => updateSelectedElement({ textAlign: 'justify' })}
+            title="Justify text"
+            aria-label="Justify text"
           >
             <AlignJustify size={16} />
           </Button>

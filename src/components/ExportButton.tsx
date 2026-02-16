@@ -3,19 +3,30 @@
 import { Button } from '@/components/ui/button';
 import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { reliableExporter } from '@/lib/reliable-export';
+import { cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
 import posthog from 'posthog-js';
+import { useCallback } from 'react';
 
-export function ExportButton() {
+type ExportButtonProps = {
+  iconOnly?: boolean;
+  className?: string;
+};
+
+export function ExportButton({ iconOnly = false, className }: ExportButtonProps) {
   const { setExportStatus, setError } = useAppActions();
   const exportStatus = useAppStore((state) => state.exportStatus);
   const textElements = useAppStore((state) => state.textElements);
   const canvasSettings = useAppStore((state) => state.canvasSettings);
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async () => {
     try {
       setExportStatus('loading');
       setError(null);
+
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
 
       const fontFamilies = [
         ...new Set(textElements.map((el) => el.fontFamily)),
@@ -50,38 +61,38 @@ export function ExportButton() {
         setError(null);
       }, 8000);
     }
-  };
+  }, [
+    canvasSettings.background.type,
+    canvasSettings.height,
+    canvasSettings.width,
+    setError,
+    setExportStatus,
+    textElements,
+  ]);
 
-  const getButtonContent = () => {
+  const getButtonIcon = () => {
     switch (exportStatus) {
       case 'loading':
-        return (
-          <>
-            <Loader2 size={16} className="mr-2 animate-spin" />
-            Exporting...
-          </>
-        );
+        return <Loader2 size={16} className="animate-spin" />;
       case 'success':
-        return (
-          <>
-            <CheckCircle size={16} className="mr-2" />
-            Exported!
-          </>
-        );
+        return <CheckCircle size={16} />;
       case 'error':
-        return (
-          <>
-            <AlertCircle size={16} className="mr-2" />
-            Export Failed
-          </>
-        );
+        return <AlertCircle size={16} />;
       default:
-        return (
-          <>
-            <Download size={16} className="mr-2" />
-            Export PNG
-          </>
-        );
+        return <Download size={16} />;
+    }
+  };
+
+  const getButtonLabel = () => {
+    switch (exportStatus) {
+      case 'loading':
+        return 'Exporting...';
+      case 'success':
+        return 'Exported!';
+      case 'error':
+        return 'Export Failed';
+      default:
+        return 'Export PNG';
     }
   };
 
@@ -97,6 +108,25 @@ export function ExportButton() {
   };
 
   const isDisabled = exportStatus === 'loading' || textElements.length === 0;
+  const buttonTitle = isDisabled
+    ? 'Add at least one layer to export'
+    : 'Export current canvas as PNG';
+
+  if (iconOnly) {
+    return (
+      <Button
+        onClick={handleExport}
+        disabled={isDisabled}
+        variant={getButtonVariant()}
+        size="icon"
+        className={cn('size-10 rounded-xl', className)}
+        title={`${buttonTitle} (${getButtonLabel()})`}
+        aria-label={buttonTitle}
+      >
+        {getButtonIcon()}
+      </Button>
+    );
+  }
 
   return (
     <Button
@@ -104,8 +134,11 @@ export function ExportButton() {
       disabled={isDisabled}
       variant={getButtonVariant()}
       size="sm"
+      className={className}
+      title={buttonTitle}
     >
-      {getButtonContent()}
+      {getButtonIcon()}
+      {getButtonLabel()}
     </Button>
   );
 }

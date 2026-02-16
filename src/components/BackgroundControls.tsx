@@ -14,11 +14,30 @@ import { Slider } from '@/components/ui/slider';
 import { useAppActions, useAppStore } from '@/contexts/AppContext';
 import { PATTERN_DEFINITIONS, getPatternById } from '@/lib/patterns';
 import { BackgroundType } from '@/types';
+import { useMemo } from 'react';
+
+const CANVAS_TEMPLATES = [
+  { id: 'post-square', label: 'Square Post', width: 1080, height: 1080 },
+  { id: 'story', label: 'Story', width: 1080, height: 1920 },
+  { id: 'landscape', label: 'Landscape', width: 1600, height: 900 },
+  { id: 'portrait', label: 'Portrait', width: 1200, height: 1500 },
+  { id: 'banner', label: 'Banner', width: 1920, height: 1080 },
+  { id: 'phone', label: 'Phone', width: 1170, height: 2532 },
+] as const;
 
 export function BackgroundControls() {
   const { updateBackground, updateCanvasSettings } = useAppActions();
   const canvasSettings = useAppStore((state) => state.canvasSettings);
   const { background, borderRadius } = canvasSettings;
+  const activeTemplate = useMemo(
+    () =>
+      CANVAS_TEMPLATES.find(
+        (template) =>
+          template.width === canvasSettings.width &&
+          template.height === canvasSettings.height,
+      ) ?? null,
+    [canvasSettings.height, canvasSettings.width],
+  );
 
   const handleBackgroundTypeChange = (type: BackgroundType) => {
     switch (type) {
@@ -240,6 +259,7 @@ export function BackgroundControls() {
             variant={background.type === 'solid' ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleBackgroundTypeChange('solid')}
+            title="Use a single background color"
           >
             Solid
           </Button>
@@ -247,6 +267,7 @@ export function BackgroundControls() {
             variant={background.type === 'transparent' ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleBackgroundTypeChange('transparent')}
+            title="Transparent background for overlays"
           >
             Transparent
           </Button>
@@ -254,6 +275,7 @@ export function BackgroundControls() {
             variant={background.type === 'pattern' ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleBackgroundTypeChange('pattern')}
+            title="Apply a repeating visual pattern"
           >
             Pattern
           </Button>
@@ -276,6 +298,33 @@ export function BackgroundControls() {
 
       <div className="space-y-4">
         <Label>Canvas Size</Label>
+        <div className="space-y-2">
+          <p className="text-muted-foreground text-xs">
+            Pick a template or set custom dimensions.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {CANVAS_TEMPLATES.map((template) => (
+              <Button
+                key={template.id}
+                variant={activeTemplate?.id === template.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() =>
+                  updateCanvasSettings({
+                    width: template.width,
+                    height: template.height,
+                  })
+                }
+                className="justify-start"
+                title={`${template.label}: ${template.width} × ${template.height}`}
+              >
+                <span className="truncate">
+                  {template.label} · {template.width}×{template.height}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label htmlFor="canvas-width" className="text-xs">
@@ -291,7 +340,8 @@ export function BackgroundControls() {
                 })
               }
               min={100}
-              max={2000}
+              max={5000}
+              title="Custom canvas width in pixels"
             />
           </div>
           <div className="space-y-1">
@@ -308,10 +358,15 @@ export function BackgroundControls() {
                 })
               }
               min={100}
-              max={2000}
+              max={5000}
+              title="Custom canvas height in pixels"
             />
           </div>
         </div>
+        <p className="text-muted-foreground text-xs">
+          Current size: {canvasSettings.width} × {canvasSettings.height}
+          {activeTemplate ? ` (${activeTemplate.label})` : ' (Custom)'}
+        </p>
       </div>
     </div>
   );

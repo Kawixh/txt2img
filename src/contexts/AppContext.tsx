@@ -22,6 +22,7 @@ type AppActions = {
   addTextElement: (content: string) => void;
   updateTextElement: (id: string, updates: Partial<TextElement>) => void;
   removeTextElement: (id: string) => void;
+  reorderTextElement: (id: string, targetIndex: number) => void;
   selectElement: (id: string | null) => void;
   updateCanvasSettings: (settings: Partial<CanvasSettings>) => void;
   updateBackground: (background: BackgroundConfig) => void;
@@ -54,6 +55,10 @@ type AppAction =
       payload: { id: string; updates: Partial<TextElement> };
     }
   | { type: 'REMOVE_TEXT_ELEMENT'; payload: { id: string } }
+  | {
+      type: 'REORDER_TEXT_ELEMENT';
+      payload: { id: string; targetIndex: number };
+    }
   | { type: 'SELECT_ELEMENT'; payload: { id: string | null } }
   | {
       type: 'UPDATE_CANVAS_SETTINGS';
@@ -160,6 +165,33 @@ function appReducer(state: AppState, action: AppAction): AppState {
           state.selectedElementId === action.payload.id
             ? null
             : state.selectedElementId,
+      };
+    }
+    case 'REORDER_TEXT_ELEMENT': {
+      const currentIndex = state.textElements.findIndex(
+        (element) => element.id === action.payload.id,
+      );
+
+      if (currentIndex === -1) {
+        return state;
+      }
+
+      const targetIndex = Math.max(
+        0,
+        Math.min(state.textElements.length - 1, action.payload.targetIndex),
+      );
+
+      if (currentIndex === targetIndex) {
+        return state;
+      }
+
+      const reordered = [...state.textElements];
+      const [movedElement] = reordered.splice(currentIndex, 1);
+      reordered.splice(targetIndex, 0, movedElement);
+
+      return {
+        ...state,
+        textElements: reordered,
       };
     }
     case 'SELECT_ELEMENT': {
@@ -308,6 +340,9 @@ function createAppStore(): AppStore {
     removeTextElement: (id: string) => {
       dispatch({ type: 'REMOVE_TEXT_ELEMENT', payload: { id } });
     },
+    reorderTextElement: (id: string, targetIndex: number) => {
+      dispatch({ type: 'REORDER_TEXT_ELEMENT', payload: { id, targetIndex } });
+    },
     selectElement: (id: string | null) => {
       dispatch({ type: 'SELECT_ELEMENT', payload: { id } });
     },
@@ -426,16 +461,10 @@ function createAppStore(): AppStore {
 const AppStoreContext = createContext<AppStore | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const storeRef = useRef<AppStore | null>(null);
-
-  if (!storeRef.current) {
-    storeRef.current = createAppStore();
-  }
+  const store = useMemo(() => createAppStore(), []);
 
   return (
-    <AppStoreContext.Provider value={storeRef.current}>
-      {children}
-    </AppStoreContext.Provider>
+    <AppStoreContext.Provider value={store}>{children}</AppStoreContext.Provider>
   );
 }
 
