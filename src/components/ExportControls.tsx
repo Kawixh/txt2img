@@ -10,6 +10,8 @@ export function ExportControls() {
   const { setExportStatus, setError } = useAppActions();
   const exportStatus = useAppStore((state) => state.exportStatus);
   const textElements = useAppStore((state) => state.textElements);
+  const shapeCount = useAppStore((state) => state.shapeElements.length);
+  const imageCount = useAppStore((state) => state.imageElements.length);
   const canvasSettings = useAppStore((state) => state.canvasSettings);
   const error = useAppStore((state) => state.error);
 
@@ -96,7 +98,8 @@ export function ExportControls() {
     }
   };
 
-  const isDisabled = exportStatus === 'loading' || textElements.length === 0;
+  const totalLayerCount = textElements.length + shapeCount + imageCount;
+  const isDisabled = exportStatus === 'loading' || totalLayerCount === 0;
 
   return (
     <Card>
@@ -118,9 +121,9 @@ export function ExportControls() {
             {getButtonContent()}
           </Button>
 
-          {textElements.length === 0 && (
+          {totalLayerCount === 0 && (
             <p className="text-muted-foreground text-center text-sm">
-              Add some text elements to export
+              Add at least one layer to export
             </p>
           )}
 

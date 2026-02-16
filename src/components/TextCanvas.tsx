@@ -1,6 +1,7 @@
 'use client';
 
 import { useAppActions, useAppStore } from '@/contexts/AppContext';
+import { createImageLayerDraftFromBlob } from '@/lib/canvas-media';
 import { getPatternById } from '@/lib/patterns';
 import { cn } from '@/lib/utils';
 import { BackgroundConfig } from '@/types';
@@ -13,12 +14,25 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { CanvasAssetElement } from './CanvasAssetElement';
 import { TextElement } from './TextElement';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 
 const shallowArrayEqual = (a: string[], b: string[]) =>
   a.length === b.length && a.every((value, index) => value === b[index]);
+
+type GraphicRenderItem = {
+  id: string;
+  type: 'shape' | 'image';
+};
+
+const shallowGraphicRenderEqual = (a: GraphicRenderItem[], b: GraphicRenderItem[]) =>
+  a.length === b.length &&
+  a.every(
+    (item, index) =>
+      item.id === b[index]?.id && item.type === b[index]?.type,
+  );
 
 const checkerboardSvg = encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>
@@ -46,7 +60,7 @@ const isEditableTarget = (target: EventTarget | null) => {
 };
 
 export function TextCanvas() {
-  const { selectElement } = useAppActions();
+  const { selectElement, addImageElement, setError } = useAppActions();
   const canvasRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const panStateRef = useRef({
@@ -62,7 +76,28 @@ export function TextCanvas() {
     (state) => state.textElements.map((element) => element.id),
     shallowArrayEqual,
   );
-  const hasElements = textElementIds.length > 0;
+  const graphicRenderItems = useAppStore((state) => {
+    const shapeIds = state.shapeElements.map((element) => element.id);
+    const imageIds = state.imageElements.map((element) => element.id);
+    const shapeIdSet = new Set(shapeIds);
+    const imageIdSet = new Set(imageIds);
+    const validIdSet = new Set([...shapeIds, ...imageIds]);
+    const orderedIds = state.graphicLayerOrder.filter((id) => validIdSet.has(id));
+    const orderedIdSet = new Set(orderedIds);
+    const missingIds = [...shapeIds, ...imageIds].filter(
+      (id) => !orderedIdSet.has(id),
+    );
+
+    return [...orderedIds, ...missingIds].map((id) => ({
+      id,
+      type: shapeIdSet.has(id)
+        ? ('shape' as const)
+        : imageIdSet.has(id)
+          ? ('image' as const)
+          : ('shape' as const),
+    }));
+  }, shallowGraphicRenderEqual);
+  const hasElements = textElementIds.length + graphicRenderItems.length > 0;
 
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [zoomMode, setZoomMode] = useState<'fit' | 'manual'>('fit');
@@ -281,10 +316,10 @@ export function TextCanvas() {
       if (event.button !== 0 && event.button !== 1) return;
 
       const target = event.target as HTMLElement;
-      const onTextElement = Boolean(target.closest('[data-text-element]'));
+      const onCanvasObject = Boolean(target.closest('[data-canvas-object]'));
       const startWithHandTool = event.button === 1 || isSpacePressed;
 
-      if (onTextElement && !startWithHandTool) return;
+      if (onCanvasObject && !startWithHandTool) return;
 
       event.preventDefault();
 
@@ -383,6 +418,68 @@ export function TextCanvas() {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
+
+  useEffect(() => {
+    const handlePaste = (event: ClipboardEvent) => {
+      if (isEditableTarget(event.target)) return;
+
+      const clipboardData = event.clipboardData;
+      if (!clipboardData) return;
+
+      const imageItems = Array.from(clipboardData.items).filter(
+        (item) => item.kind === 'file' && item.type.startsWith('image/'),
+      );
+      const svgMarkup = clipboardData.getData('image/svg+xml').trim();
+      const plainText = clipboardData.getData('text/plain').trim();
+      const fallbackSvg =
+        !svgMarkup &&
+        imageItems.length === 0 &&
+        plainText.startsWith('<svg') &&
+        plainText.includes('</svg>')
+          ? plainText
+          : '';
+
+      if (imageItems.length === 0 && !svgMarkup && !fallbackSvg) return;
+
+      event.preventDefault();
+      setError(null);
+
+      const processPastedImages = async () => {
+        try {
+          for (const item of imageItems) {
+            const file = item.getAsFile();
+            if (!file) continue;
+
+            const draft = await createImageLayerDraftFromBlob(
+              file,
+              file.name || 'Pasted image',
+            );
+            addImageElement(draft);
+          }
+
+          if ((svgMarkup || fallbackSvg) && imageItems.length === 0) {
+            const draft = await createImageLayerDraftFromBlob(
+              new Blob([svgMarkup || fallbackSvg], {
+                type: 'image/svg+xml',
+              }),
+              'Pasted vector',
+            );
+            addImageElement(draft);
+          }
+        } catch (error) {
+          console.error('Paste image failed:', error);
+          setError(
+            'Unable to paste image. Copy a PNG, JPEG, or SVG and try again.',
+          );
+        }
+      };
+
+      void processPastedImages();
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [addImageElement, setError]);
 
   const handleWheel = useCallback(
     (event: React.WheelEvent<HTMLDivElement>) => {
@@ -578,8 +675,17 @@ export function TextCanvas() {
             id="text-canvas"
             style={canvasStyle}
             onClick={handleCanvasClick}
-            className="relative ml-40"
+            className="relative"
           >
+            {graphicRenderItems.map((item) => (
+              <CanvasAssetElement
+                key={item.id}
+                elementId={item.id}
+                elementType={item.type}
+                canvasRef={canvasRef}
+                canvasScale={scale}
+              />
+            ))}
             {textElementIds.map((id) => (
               <TextElement
                 key={id}
@@ -592,10 +698,10 @@ export function TextCanvas() {
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="bg-background/78 rounded-xl px-5 py-4 text-center shadow-sm backdrop-blur">
                   <p className="text-foreground text-sm font-semibold">
-                    Add a text layer to start
+                    Add text, shapes, or paste an image
                   </p>
                   <p className="text-muted-foreground mt-1 text-xs">
-                    Zoom with pinch or Ctrl + wheel. Hold Space and drag to pan.
+                    Ctrl/Cmd + V pastes PNG, JPEG, SVG and more.
                   </p>
                 </div>
               </div>

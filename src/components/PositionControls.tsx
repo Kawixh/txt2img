@@ -34,6 +34,12 @@ export function PositionControls() {
   };
 
   const presetGrid = getPresetGrid();
+  const manualRange = {
+    minX: -Math.round(canvasSettings.width * 0.5),
+    maxX: Math.round(canvasSettings.width * 1.5),
+    minY: -Math.round(canvasSettings.height * 0.5),
+    maxY: Math.round(canvasSettings.height * 1.5),
+  };
 
   const handlePresetChange = (preset: PositionPreset) => {
     updateSelectedElement({
@@ -217,15 +223,15 @@ export function PositionControls() {
                   updateSelectedElement({ x: parseInt(e.target.value) || 0 })
                 }
                 className="h-6 w-16 text-xs"
-                min={0}
-                max={canvasSettings.width}
+                min={manualRange.minX}
+                max={manualRange.maxX}
               />
             </div>
             <Slider
               value={[selectedElement.x]}
               onValueChange={([value]) => updateSelectedElement({ x: value })}
-              min={0}
-              max={canvasSettings.width}
+              min={manualRange.minX}
+              max={manualRange.maxX}
               step={5}
               className="w-full"
             />
@@ -243,15 +249,15 @@ export function PositionControls() {
                   updateSelectedElement({ y: parseInt(e.target.value) || 0 })
                 }
                 className="h-6 w-16 text-xs"
-                min={0}
-                max={canvasSettings.height}
+                min={manualRange.minY}
+                max={manualRange.maxY}
               />
             </div>
             <Slider
               value={[selectedElement.y]}
               onValueChange={([value]) => updateSelectedElement({ y: value })}
-              min={0}
-              max={canvasSettings.height}
+              min={manualRange.minY}
+              max={manualRange.maxY}
               step={5}
               className="w-full"
             />

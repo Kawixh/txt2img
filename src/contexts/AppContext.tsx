@@ -11,9 +11,11 @@ import React, {
 import {
   AppState,
   BackgroundConfig,
+  CanvasImageElement,
   CanvasSettings,
   FontSearchOptions,
   GoogleFont,
+  ShapeElement,
   TextElement,
 } from '@/types';
 import { googleFontsManager } from '@/lib/google-fonts';
@@ -23,6 +25,28 @@ type AppActions = {
   updateTextElement: (id: string, updates: Partial<TextElement>) => void;
   removeTextElement: (id: string) => void;
   reorderTextElement: (id: string, targetIndex: number) => void;
+  reorderGraphicLayer: (id: string, targetIndex: number) => void;
+  addShapeElement: (shape: ShapeElement['shape']) => void;
+  updateShapeElement: (id: string, updates: Partial<ShapeElement>) => void;
+  removeShapeElement: (id: string) => void;
+  addImageElement: (
+    image: {
+      src: string;
+      mimeType: string;
+      name: string;
+      width: number;
+      height: number;
+      x?: number;
+      y?: number;
+      rotation?: number;
+      opacity?: number;
+    },
+  ) => void;
+  updateImageElement: (
+    id: string,
+    updates: Partial<CanvasImageElement>,
+  ) => void;
+  removeImageElement: (id: string) => void;
   selectElement: (id: string | null) => void;
   updateCanvasSettings: (settings: Partial<CanvasSettings>) => void;
   updateBackground: (background: BackgroundConfig) => void;
@@ -59,6 +83,38 @@ type AppAction =
       type: 'REORDER_TEXT_ELEMENT';
       payload: { id: string; targetIndex: number };
     }
+  | {
+      type: 'REORDER_GRAPHIC_LAYER';
+      payload: { id: string; targetIndex: number };
+    }
+  | {
+      type: 'ADD_SHAPE_ELEMENT';
+      payload: { shape: ShapeElement['shape'] };
+    }
+  | {
+      type: 'UPDATE_SHAPE_ELEMENT';
+      payload: { id: string; updates: Partial<ShapeElement> };
+    }
+  | { type: 'REMOVE_SHAPE_ELEMENT'; payload: { id: string } }
+  | {
+      type: 'ADD_IMAGE_ELEMENT';
+      payload: {
+        src: string;
+        mimeType: string;
+        name: string;
+        width: number;
+        height: number;
+        x?: number;
+        y?: number;
+        rotation?: number;
+        opacity?: number;
+      };
+    }
+  | {
+      type: 'UPDATE_IMAGE_ELEMENT';
+      payload: { id: string; updates: Partial<CanvasImageElement> };
+    }
+  | { type: 'REMOVE_IMAGE_ELEMENT'; payload: { id: string } }
   | { type: 'SELECT_ELEMENT'; payload: { id: string | null } }
   | {
       type: 'UPDATE_CANVAS_SETTINGS';
@@ -88,6 +144,9 @@ type AppAction =
 
 const initialState: AppState = {
   textElements: [],
+  shapeElements: [],
+  imageElements: [],
+  graphicLayerOrder: [],
   canvasSettings: {
     width: 800,
     height: 600,
@@ -111,11 +170,52 @@ const initialState: AppState = {
   },
 };
 
+const createElementId = (prefix: 'text' | 'shape' | 'image') => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+
+  return `${prefix}-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+};
+
+const getDefaultShapeColor = (shape: ShapeElement['shape']) => {
+  switch (shape) {
+    case 'circle':
+      return '#0ea5e9';
+    case 'triangle':
+      return '#f97316';
+    case 'diamond':
+      return '#f43f5e';
+    case 'hexagon':
+      return '#14b8a6';
+    case 'star':
+      return '#f59e0b';
+    default:
+      return '#7c3aed';
+  }
+};
+
+const getDefaultShapeSize = (shape: ShapeElement['shape']) => {
+  switch (shape) {
+    case 'triangle':
+      return { width: 240, height: 220 };
+    case 'star':
+      return { width: 240, height: 240 };
+    case 'hexagon':
+      return { width: 240, height: 210 };
+    default:
+      return { width: 220, height: 220 };
+  }
+};
+
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'ADD_TEXT_ELEMENT': {
       const newElement: TextElement = {
-        id: Date.now().toString(),
+        id: createElementId('text'),
+        layerType: 'text',
         content: action.payload.content,
         x: 50,
         y: 50,
@@ -192,6 +292,140 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         textElements: reordered,
+      };
+    }
+    case 'REORDER_GRAPHIC_LAYER': {
+      const fallbackOrder = [
+        ...state.shapeElements.map((element) => element.id),
+        ...state.imageElements.map((element) => element.id),
+      ];
+      const activeOrder =
+        state.graphicLayerOrder.length > 0 ? state.graphicLayerOrder : fallbackOrder;
+      const currentIndex = activeOrder.findIndex(
+        (layerId) => layerId === action.payload.id,
+      );
+
+      if (currentIndex === -1) {
+        return state;
+      }
+
+      const targetIndex = Math.max(
+        0,
+        Math.min(activeOrder.length - 1, action.payload.targetIndex),
+      );
+
+      if (currentIndex === targetIndex) {
+        return state;
+      }
+
+      const reordered = [...activeOrder];
+      const [movedLayer] = reordered.splice(currentIndex, 1);
+      reordered.splice(targetIndex, 0, movedLayer);
+
+      return {
+        ...state,
+        graphicLayerOrder: reordered,
+      };
+    }
+    case 'ADD_SHAPE_ELEMENT': {
+      const shape = action.payload.shape;
+      const { width, height } = getDefaultShapeSize(shape);
+      const newShape: ShapeElement = {
+        id: createElementId('shape'),
+        layerType: 'shape',
+        shape,
+        width,
+        height,
+        x: Math.max(0, (state.canvasSettings.width - width) / 2),
+        y: Math.max(0, (state.canvasSettings.height - height) / 2),
+        rotation: 0,
+        opacity: 1,
+        fill: getDefaultShapeColor(shape),
+      };
+
+      return {
+        ...state,
+        shapeElements: [...state.shapeElements, newShape],
+        graphicLayerOrder: [...state.graphicLayerOrder, newShape.id],
+        selectedElementId: newShape.id,
+      };
+    }
+    case 'UPDATE_SHAPE_ELEMENT': {
+      return {
+        ...state,
+        shapeElements: state.shapeElements.map((element) =>
+          element.id === action.payload.id
+            ? { ...element, ...action.payload.updates }
+            : element,
+        ),
+      };
+    }
+    case 'REMOVE_SHAPE_ELEMENT': {
+      return {
+        ...state,
+        shapeElements: state.shapeElements.filter(
+          (element) => element.id !== action.payload.id,
+        ),
+        graphicLayerOrder: state.graphicLayerOrder.filter(
+          (layerId) => layerId !== action.payload.id,
+        ),
+        selectedElementId:
+          state.selectedElementId === action.payload.id
+            ? null
+            : state.selectedElementId,
+      };
+    }
+    case 'ADD_IMAGE_ELEMENT': {
+      const imageWidth = Math.max(24, action.payload.width);
+      const imageHeight = Math.max(24, action.payload.height);
+      const newImage: CanvasImageElement = {
+        id: createElementId('image'),
+        layerType: 'image',
+        src: action.payload.src,
+        mimeType: action.payload.mimeType,
+        name: action.payload.name,
+        width: imageWidth,
+        height: imageHeight,
+        x:
+          action.payload.x ??
+          Math.max(0, (state.canvasSettings.width - imageWidth) / 2),
+        y:
+          action.payload.y ??
+          Math.max(0, (state.canvasSettings.height - imageHeight) / 2),
+        rotation: action.payload.rotation ?? 0,
+        opacity: action.payload.opacity ?? 1,
+      };
+
+      return {
+        ...state,
+        imageElements: [...state.imageElements, newImage],
+        graphicLayerOrder: [...state.graphicLayerOrder, newImage.id],
+        selectedElementId: newImage.id,
+      };
+    }
+    case 'UPDATE_IMAGE_ELEMENT': {
+      return {
+        ...state,
+        imageElements: state.imageElements.map((element) =>
+          element.id === action.payload.id
+            ? { ...element, ...action.payload.updates }
+            : element,
+        ),
+      };
+    }
+    case 'REMOVE_IMAGE_ELEMENT': {
+      return {
+        ...state,
+        imageElements: state.imageElements.filter(
+          (element) => element.id !== action.payload.id,
+        ),
+        graphicLayerOrder: state.graphicLayerOrder.filter(
+          (layerId) => layerId !== action.payload.id,
+        ),
+        selectedElementId:
+          state.selectedElementId === action.payload.id
+            ? null
+            : state.selectedElementId,
       };
     }
     case 'SELECT_ELEMENT': {
@@ -342,6 +576,33 @@ function createAppStore(): AppStore {
     },
     reorderTextElement: (id: string, targetIndex: number) => {
       dispatch({ type: 'REORDER_TEXT_ELEMENT', payload: { id, targetIndex } });
+    },
+    reorderGraphicLayer: (id: string, targetIndex: number) => {
+      dispatch({
+        type: 'REORDER_GRAPHIC_LAYER',
+        payload: { id, targetIndex },
+      });
+    },
+    addShapeElement: (shape: ShapeElement['shape']) => {
+      dispatch({ type: 'ADD_SHAPE_ELEMENT', payload: { shape } });
+    },
+    updateShapeElement: (id: string, updates: Partial<ShapeElement>) => {
+      dispatch({ type: 'UPDATE_SHAPE_ELEMENT', payload: { id, updates } });
+    },
+    removeShapeElement: (id: string) => {
+      dispatch({ type: 'REMOVE_SHAPE_ELEMENT', payload: { id } });
+    },
+    addImageElement: (image) => {
+      dispatch({ type: 'ADD_IMAGE_ELEMENT', payload: image });
+    },
+    updateImageElement: (
+      id: string,
+      updates: Partial<CanvasImageElement>,
+    ) => {
+      dispatch({ type: 'UPDATE_IMAGE_ELEMENT', payload: { id, updates } });
+    },
+    removeImageElement: (id: string) => {
+      dispatch({ type: 'REMOVE_IMAGE_ELEMENT', payload: { id } });
     },
     selectElement: (id: string | null) => {
       dispatch({ type: 'SELECT_ELEMENT', payload: { id } });

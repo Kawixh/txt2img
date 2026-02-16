@@ -239,7 +239,7 @@ function TextElementComponent({
   if (!element) return null;
 
   return (
-    <div className="relative" data-text-element>
+    <div className="relative" data-text-element data-canvas-object>
       <div
         ref={elementRef}
         style={fontStyle}

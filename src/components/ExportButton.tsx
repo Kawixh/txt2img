@@ -17,6 +17,8 @@ export function ExportButton({ iconOnly = false, className }: ExportButtonProps)
   const { setExportStatus, setError } = useAppActions();
   const exportStatus = useAppStore((state) => state.exportStatus);
   const textElements = useAppStore((state) => state.textElements);
+  const shapeCount = useAppStore((state) => state.shapeElements.length);
+  const imageCount = useAppStore((state) => state.imageElements.length);
   const canvasSettings = useAppStore((state) => state.canvasSettings);
 
   const handleExport = useCallback(async () => {
@@ -107,7 +109,8 @@ export function ExportButton({ iconOnly = false, className }: ExportButtonProps)
     }
   };
 
-  const isDisabled = exportStatus === 'loading' || textElements.length === 0;
+  const totalLayerCount = textElements.length + shapeCount + imageCount;
+  const isDisabled = exportStatus === 'loading' || totalLayerCount === 0;
   const buttonTitle = isDisabled
     ? 'Add at least one layer to export'
     : 'Export current canvas as PNG';

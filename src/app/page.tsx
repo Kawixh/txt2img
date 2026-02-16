@@ -6,13 +6,13 @@ export default function Home() {
   return (
     <AppProvider>
       <div className="bg-background text-foreground relative h-screen overflow-hidden">
-        <TextCanvas />
+        <div className="h-full md:pl-[23.5rem]">
+          <TextCanvas />
+        </div>
 
-        <aside className="pointer-events-none absolute top-3 right-3 left-3 z-30 max-h-[calc(100%-1.5rem)] md:top-5 md:right-auto md:bottom-5 md:max-h-[calc(100%-2.5rem)] md:w-90">
-          <div className="pointer-events-auto h-full">
-            <div className="h-full max-h-full overflow-hidden">
-              <ControlTabs />
-            </div>
+        <aside className="pointer-events-none absolute inset-x-3 top-3 z-30 max-h-[56vh] md:inset-y-4 md:left-4 md:right-auto md:max-h-none md:w-[22rem]">
+          <div className="pointer-events-auto h-full overflow-hidden">
+            <ControlTabs />
           </div>
         </aside>
       </div>

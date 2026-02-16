@@ -274,7 +274,15 @@ class ReliableExporter {
     const style: Record<string, string> = {
       width: `${options.width}px`,
       height: `${options.height}px`,
-      transform: 'none',
+      transform: 'translate3d(0, 0, 0) scale(1)',
+      transformOrigin: 'top left',
+      position: 'relative',
+      display: 'block',
+      left: '0px',
+      top: '0px',
+      margin: '0px',
+      marginLeft: '0px',
+      marginTop: '0px',
       willChange: 'auto',
       boxShadow: 'none',
     };
@@ -441,7 +449,15 @@ class ReliableExporter {
             cacheBust: false,
             skipFonts: true,
             style: {
-              transform: 'none',
+              transform: 'translate3d(0, 0, 0) scale(1)',
+              transformOrigin: 'top left',
+              position: 'relative',
+              display: 'block',
+              left: '0px',
+              top: '0px',
+              margin: '0px',
+              marginLeft: '0px',
+              marginTop: '0px',
             },
             filter: (node) => {
               const tagName = node.tagName?.toLowerCase();

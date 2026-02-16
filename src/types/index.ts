@@ -12,6 +12,7 @@ export type PositionPreset =
 
 export type TextElement = {
   id: string;
+  layerType: 'text';
   content: string;
   x: number;
   y: number;
@@ -38,6 +39,41 @@ export type TextElement = {
   paddingX: number;
   paddingY: number;
   wordWrap: boolean;
+};
+
+export type ShapeKind =
+  | 'rectangle'
+  | 'circle'
+  | 'triangle'
+  | 'diamond'
+  | 'hexagon'
+  | 'star';
+
+export type ShapeElement = {
+  id: string;
+  layerType: 'shape';
+  shape: ShapeKind;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  opacity: number;
+  fill: string;
+};
+
+export type CanvasImageElement = {
+  id: string;
+  layerType: 'image';
+  src: string;
+  mimeType: string;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  opacity: number;
 };
 
 export type BackgroundType = 'solid' | 'transparent' | 'gradient' | 'pattern';
@@ -92,6 +128,9 @@ export type CanvasSettings = {
 
 export type AppState = {
   textElements: TextElement[];
+  shapeElements: ShapeElement[];
+  imageElements: CanvasImageElement[];
+  graphicLayerOrder: string[];
   canvasSettings: CanvasSettings;
   selectedElementId: string | null;
   isLoading: boolean;

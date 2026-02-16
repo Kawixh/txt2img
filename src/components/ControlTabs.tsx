@@ -30,21 +30,21 @@ export function ControlTabs() {
       {
         id: 'layers',
         label: 'Layers',
-        description: 'Stack order and text editing',
+        description: 'Manage layer order and quick edits',
         icon: Layers2,
         component: <LayerControls />,
       },
       {
         id: 'content',
         label: 'Add',
-        description: 'Create new text layers',
+        description: 'Insert text, shapes, and images',
         icon: Plus,
         component: <TextInput />,
       },
       {
         id: 'styling',
-        label: 'Type',
-        description: 'Font and styling controls',
+        label: 'Text',
+        description: 'Typography and styling controls',
         icon: Type,
         component: <FontControls />,
       },
@@ -72,51 +72,55 @@ export function ControlTabs() {
   );
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden rounded-[22px] bg-card/75 shadow-[var(--panel-shadow)] backdrop-blur">
-      <div className="flex shrink-0 flex-col items-center gap-2 border-r border-border/40 bg-background/65 p-2">
-        <div className="w-full rounded-xl bg-primary/12 px-2 py-2 text-center">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-primary/80">
-            Glim Studio
-          </p>
+    <div className="bg-card/95 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 shadow-(--panel-shadow)">
+      <div className="border-b border-border/60 px-4 py-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-[0.18em]">
+              Canvas Studio
+            </p>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">
+              Design Controls
+            </h2>
+          </div>
+          <ExportButton className="h-8 px-3" />
         </div>
 
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? 'default' : 'ghost'}
-              size="icon"
-              className={cn(
-                'size-10 rounded-xl',
-                activeTab !== tab.id && 'text-muted-foreground',
-              )}
-              onClick={() => setActiveTab(tab.id)}
-              title={`${tab.label}: ${tab.description}`}
-              aria-label={`${tab.label}: ${tab.description}`}
-            >
-              <Icon size={16} />
-            </Button>
-          );
-        })}
+        <div className="mt-3 grid grid-cols-5 gap-1 rounded-xl bg-muted/55 p-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
 
-        <div className="mt-auto pt-1">
-          <ExportButton iconOnly />
-        </div>
-      </div>
-
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="border-b border-border/35 px-4 py-3">
-          <h2 className="font-display text-lg text-foreground">{activeTabConfig.label}</h2>
-          <p className="text-muted-foreground mt-0.5 text-xs">
-            {activeTabConfig.description}
-          </p>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {activeTabConfig.component}
+            return (
+              <Button
+                key={tab.id}
+                variant="ghost"
+                className={cn(
+                  'h-auto min-h-12 flex-col gap-1 rounded-lg px-1 py-2 text-[11px] font-medium',
+                  isActive
+                    ? 'border border-border/70 bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-background/70',
+                )}
+                onClick={() => setActiveTab(tab.id)}
+                title={`${tab.label}: ${tab.description}`}
+                aria-label={`${tab.label}: ${tab.description}`}
+              >
+                <Icon size={15} />
+                <span>{tab.label}</span>
+              </Button>
+            );
+          })}
         </div>
       </div>
+
+      <div className="border-b border-border/60 px-4 py-3">
+        <p className="text-sm font-semibold text-foreground">{activeTabConfig.label}</p>
+        <p className="text-muted-foreground mt-0.5 text-xs">
+          {activeTabConfig.description}
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4">{activeTabConfig.component}</div>
     </div>
   );
 }
