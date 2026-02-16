@@ -29,7 +29,7 @@ import {
   Strikethrough,
   Underline,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FontAxis,
   getCachedVariableFontInfo,
@@ -38,17 +38,20 @@ import {
   preloadKnownVariableFonts,
 } from '@/lib/variable-fonts';
 
-const FALLBACK_FONTS = [
-  'Arial',
-  'Helvetica',
-  'Times New Roman',
-  'Georgia',
-  'Courier New',
-  'Verdana',
-  'Impact',
-  'Comic Sans MS',
-  'Trebuchet MS',
-  'Palatino',
+const FALLBACK_FONTS: Array<{
+  family: string;
+  category: GoogleFont['category'];
+}> = [
+  { family: 'Arial', category: 'sans-serif' },
+  { family: 'Helvetica', category: 'sans-serif' },
+  { family: 'Times New Roman', category: 'serif' },
+  { family: 'Georgia', category: 'serif' },
+  { family: 'Courier New', category: 'monospace' },
+  { family: 'Verdana', category: 'sans-serif' },
+  { family: 'Impact', category: 'display' },
+  { family: 'Comic Sans MS', category: 'handwriting' },
+  { family: 'Trebuchet MS', category: 'sans-serif' },
+  { family: 'Palatino', category: 'serif' },
 ];
 
 const FONT_CATEGORIES: Array<{
@@ -98,6 +101,7 @@ export function FontControls() {
 
   const [variableFontAxes, setVariableFontAxes] = useState<FontAxis[]>([]);
   const [isDetectingAxes, setIsDetectingAxes] = useState(false);
+  const hasFetchedInitialFonts = useRef(false);
 
   const normalizeVariantsForLoad = useCallback((variants?: string[]) => {
     if (!variants || variants.length === 0) return undefined;
@@ -121,7 +125,12 @@ export function FontControls() {
   }, []);
 
   useEffect(() => {
-    if (fontsState.fonts.length === 0 && !fontsState.isLoading) {
+    if (
+      !hasFetchedInitialFonts.current &&
+      fontsState.fonts.length === 0 &&
+      !fontsState.isLoading
+    ) {
+      hasFetchedInitialFonts.current = true;
       fetchFonts({ sort: 'popularity' });
     }
     preloadKnownVariableFonts();
@@ -206,12 +215,19 @@ export function FontControls() {
 
   const fontOptions = useMemo<FontOption[]>(() => {
     const googleFonts = getFilteredFonts();
+    const selectedCategory = fontsState.selectedCategory;
 
-    const fallbackOptions: FontOption[] = FALLBACK_FONTS.map((font) => ({
-      value: font,
-      label: font,
-      category: 'system' as const,
-    }));
+    const fallbackOptions: FontOption[] = FALLBACK_FONTS
+      .filter((font) => {
+        if (!selectedCategory) return true;
+        if (selectedCategory === 'variable') return false;
+        return font.category === selectedCategory;
+      })
+      .map((font) => ({
+        value: font.family,
+        label: font.family,
+        category: font.category,
+      }));
 
     if (googleFonts.length === 0) {
       return fallbackOptions;
@@ -272,6 +288,7 @@ export function FontControls() {
     category: GoogleFont['category'] | 'all' | 'variable',
   ) => {
     setSelectedCategory(category === 'all' ? '' : category);
+    setSearchQuery('');
   };
 
   const handleFontSearch = (query: string) => {
@@ -364,6 +381,7 @@ export function FontControls() {
           )}
         </Label>
         <Combobox
+          key={`font-family-${fontsState.selectedCategory || 'all'}`}
           options={fontOptions}
           value={selectedElement.fontFamily}
           onValueChange={handleFontChange}

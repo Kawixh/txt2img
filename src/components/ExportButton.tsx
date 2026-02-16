@@ -26,8 +26,9 @@ export function ExportButton() {
         {
           width: canvasSettings.width,
           height: canvasSettings.height,
-          pixelRatio: 2,
+          pixelRatio: 3,
           quality: 1.0,
+          transparentBackground: canvasSettings.background.type === 'transparent',
         },
         fontFamilies,
       );

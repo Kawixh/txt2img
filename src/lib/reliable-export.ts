@@ -10,9 +10,16 @@ type ExportOptions = {
   height: number;
   pixelRatio?: number;
   quality?: number;
+  transparentBackground?: boolean;
+  maxPixelCount?: number;
 };
 
+type PngOptions = NonNullable<Parameters<typeof toPng>[1]>;
+
 class ReliableExporter {
+  private readonly defaultPixelRatio = 3;
+  private readonly defaultMaxPixelCount = 48_000_000;
+
   /**
    * Creates inline font CSS that targets specific elements
    */
@@ -240,6 +247,89 @@ class ReliableExporter {
     };
   }
 
+  private getSafePixelRatio(options: ExportOptions): number {
+    const requestedRatio = Number.isFinite(options.pixelRatio)
+      ? Math.max(1, Number(options.pixelRatio))
+      : this.defaultPixelRatio;
+
+    const maxPixelCount = Number.isFinite(options.maxPixelCount)
+      ? Math.max(1, Number(options.maxPixelCount))
+      : this.defaultMaxPixelCount;
+
+    const basePixelCount = options.width * options.height;
+    if (basePixelCount <= 0) {
+      return requestedRatio;
+    }
+
+    const totalPixels = basePixelCount * requestedRatio * requestedRatio;
+    if (totalPixels <= maxPixelCount) {
+      return requestedRatio;
+    }
+
+    const clampedRatio = Math.sqrt(maxPixelCount / basePixelCount);
+    return Number(Math.max(1, clampedRatio).toFixed(2));
+  }
+
+  private getExportStyle(options: ExportOptions): Record<string, string> {
+    const style: Record<string, string> = {
+      width: `${options.width}px`,
+      height: `${options.height}px`,
+      transform: 'none',
+      willChange: 'auto',
+      boxShadow: 'none',
+    };
+
+    if (options.transparentBackground) {
+      style.backgroundColor = 'transparent';
+      style.backgroundImage = 'none';
+    }
+
+    return style;
+  }
+
+  private shouldIncludeNode(node: HTMLElement): boolean {
+    const tagName = node.tagName?.toLowerCase();
+    return !['script', 'noscript', 'meta', 'title', 'link'].includes(tagName);
+  }
+
+  private async renderPng(
+    element: HTMLElement,
+    options: ExportOptions,
+    overrides: Partial<PngOptions> = {},
+  ): Promise<string> {
+    const baseStyle = this.getExportStyle(options);
+    const overrideStyle = (overrides.style ?? {}) as Record<string, string>;
+    const mergedStyle: Record<string, string> = {
+      ...baseStyle,
+      ...overrideStyle,
+    };
+    const pixelRatio = this.getSafePixelRatio(options);
+
+    const backgroundColor =
+      'backgroundColor' in overrides
+        ? overrides.backgroundColor
+        : options.transparentBackground
+          ? 'transparent'
+          : undefined;
+
+    const filter = overrides.filter ?? this.shouldIncludeNode;
+
+    const exportOptions: PngOptions = {
+      ...overrides,
+      width: options.width,
+      height: options.height,
+      pixelRatio,
+      quality: options.quality ?? 1,
+      cacheBust: true,
+      skipFonts: true,
+      backgroundColor,
+      style: mergedStyle,
+      filter,
+    };
+
+    return toPng(element, exportOptions);
+  }
+
   /**
    * Exports an element to PNG using html-to-image with reliable font handling
    */
@@ -255,6 +345,14 @@ class ReliableExporter {
 
     console.log('🚀 Starting reliable export...');
     console.log('Font families to ensure:', fontFamilies);
+    console.log(
+      'Export dimensions:',
+      `${options.width}x${options.height} @ ${this.getSafePixelRatio(options)}x`,
+    );
+    console.log(
+      'Transparent export:',
+      options.transparentBackground ? 'enabled' : 'disabled',
+    );
 
     // Step 1: Wait for fonts to be ready
     if (fontFamilies.length > 0) {
@@ -270,26 +368,8 @@ class ReliableExporter {
 
       console.log('📝 Generated combined embedded + aggressive CSS');
 
-      const dataUrl = await toPng(element, {
-        backgroundColor: undefined,
-        width: options.width,
-        height: options.height,
-        pixelRatio: options.pixelRatio || 2,
-        quality: options.quality || 1.0,
-        cacheBust: true,
-        skipFonts: true,
+      const dataUrl = await this.renderPng(element, options, {
         fontEmbedCSS: combinedCSS,
-        style: {
-          width: `${options.width}px`,
-          height: `${options.height}px`,
-          transform: 'translateZ(0)',
-        },
-        filter: (node) => {
-          const tagName = node.tagName?.toLowerCase();
-          return !['script', 'noscript', 'meta', 'title', 'link'].includes(
-            tagName,
-          );
-        },
       });
 
       console.log('✅ Embedded font export completed successfully');
@@ -309,26 +389,7 @@ class ReliableExporter {
 
         console.log('📝 Direct styles injected, proceeding with export...');
 
-        const dataUrl = await toPng(element, {
-          backgroundColor: undefined,
-          width: options.width,
-          height: options.height,
-          pixelRatio: options.pixelRatio || 2,
-          quality: options.quality || 1.0,
-          cacheBust: true,
-          skipFonts: true,
-          style: {
-            width: `${options.width}px`,
-            height: `${options.height}px`,
-            transform: 'translateZ(0)',
-          },
-          filter: (node) => {
-            const tagName = node.tagName?.toLowerCase();
-            return !['script', 'noscript', 'meta', 'title', 'link'].includes(
-              tagName,
-            );
-          },
-        });
+        const dataUrl = await this.renderPng(element, options);
 
         console.log('✅ Direct style injection export completed successfully');
         return dataUrl;
@@ -349,26 +410,8 @@ class ReliableExporter {
       console.log('Generated inline font CSS:', inlineFontCSS);
 
       try {
-        const dataUrl = await toPng(element, {
-          backgroundColor: undefined,
-          width: options.width,
-          height: options.height,
-          pixelRatio: options.pixelRatio || 2,
-          quality: options.quality || 1.0,
-          cacheBust: true,
-          skipFonts: true,
+        const dataUrl = await this.renderPng(element, options, {
           fontEmbedCSS: inlineFontCSS,
-          style: {
-            width: `${options.width}px`,
-            height: `${options.height}px`,
-            transform: 'translateZ(0)',
-          },
-          filter: (node) => {
-            const tagName = node.tagName?.toLowerCase();
-            return !['script', 'noscript', 'meta', 'title', 'link'].includes(
-              tagName,
-            );
-          },
         });
 
         console.log('✅ CSS-based export completed successfully');
@@ -380,29 +423,32 @@ class ReliableExporter {
         );
 
         // Final fallback: Minimal approach
-        const fallbackDataUrl = await toPng(element, {
-          backgroundColor: undefined,
-          width: options.width,
-          height: options.height,
-          pixelRatio: 1.5,
-          quality: 0.9,
-          skipFonts: true,
-          style: {
-            width: `${options.width}px`,
-            height: `${options.height}px`,
+        const fallbackDataUrl = await this.renderPng(
+          element,
+          {
+            ...options,
+            pixelRatio: Math.min(options.pixelRatio ?? this.defaultPixelRatio, 2),
           },
-          filter: (node) => {
-            const tagName = node.tagName?.toLowerCase();
-            return ![
-              'script',
-              'noscript',
-              'meta',
-              'title',
-              'link',
-              'style',
-            ].includes(tagName);
+          {
+            quality: 1,
+            cacheBust: false,
+            skipFonts: true,
+            style: {
+              transform: 'none',
+            },
+            filter: (node) => {
+              const tagName = node.tagName?.toLowerCase();
+              return ![
+                'script',
+                'noscript',
+                'meta',
+                'title',
+                'link',
+                'style',
+              ].includes(tagName);
+            },
           },
-        });
+        );
 
         console.log('✅ Minimal fallback export completed');
         return fallbackDataUrl;

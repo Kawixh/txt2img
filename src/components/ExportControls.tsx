@@ -27,8 +27,9 @@ export function ExportControls() {
         {
           width: canvasSettings.width,
           height: canvasSettings.height,
-          pixelRatio: 2,
+          pixelRatio: 3,
           quality: 1.0,
+          transparentBackground: canvasSettings.background.type === 'transparent',
         },
         fontFamilies,
       );
@@ -143,7 +144,7 @@ export function ExportControls() {
         </div>
 
         <div className="text-muted-foreground space-y-1 text-xs">
-          <p>• High resolution (2x scale)</p>
+          <p>• High resolution (3x scale)</p>
           <p>• PNG format with transparency support</p>
           <p>• Modern CSS color support</p>
           <p>• SVG-based rendering engine</p>
