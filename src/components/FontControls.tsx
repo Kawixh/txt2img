@@ -68,7 +68,7 @@ const FONT_CATEGORIES: Array<{
 ];
 
 const FONT_SIZE_MIN = 8;
-const FONT_SIZE_MAX = 200;
+const FONT_SIZE_SLIDER_BASE_MAX = 200;
 
 type FontOption = ComboboxOption & {
   isVariable?: boolean;
@@ -346,12 +346,14 @@ export function FontControls() {
   };
 
   const handleFontSizeChange = (value: number) => {
-    const clampedValue = Math.min(
-      FONT_SIZE_MAX,
-      Math.max(FONT_SIZE_MIN, Math.round(value)),
-    );
+    const clampedValue = Math.max(FONT_SIZE_MIN, Math.round(value));
     updateSelectedElement({ fontSize: clampedValue });
   };
+
+  const fontSizeSliderMax = Math.max(
+    FONT_SIZE_SLIDER_BASE_MAX,
+    Math.ceil(selectedElement.fontSize / 10) * 10,
+  );
 
   const isBold = selectedElement.fontWeight >= 600;
   const isItalic = selectedElement.fontStyle === 'italic';
@@ -456,7 +458,6 @@ export function FontControls() {
             id="font-size-input"
             type="number"
             min={FONT_SIZE_MIN}
-            max={FONT_SIZE_MAX}
             step={1}
             value={selectedElement.fontSize}
             onChange={(e) => {
@@ -474,7 +475,7 @@ export function FontControls() {
           value={[selectedElement.fontSize]}
           onValueChange={([value]) => handleFontSizeChange(value)}
           min={FONT_SIZE_MIN}
-          max={FONT_SIZE_MAX}
+          max={fontSizeSliderMax}
           step={1}
           className="w-full"
         />
