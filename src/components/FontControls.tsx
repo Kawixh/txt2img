@@ -67,6 +67,9 @@ const FONT_CATEGORIES: Array<{
   { value: 'variable', label: 'Variable Fonts' },
 ];
 
+const FONT_SIZE_MIN = 8;
+const FONT_SIZE_MAX = 200;
+
 type FontOption = ComboboxOption & {
   isVariable?: boolean;
   axesCount?: number;
@@ -342,6 +345,14 @@ export function FontControls() {
     updateTextElement(selectedElement.id, updates);
   };
 
+  const handleFontSizeChange = (value: number) => {
+    const clampedValue = Math.min(
+      FONT_SIZE_MAX,
+      Math.max(FONT_SIZE_MIN, Math.round(value)),
+    );
+    updateSelectedElement({ fontSize: clampedValue });
+  };
+
   const isBold = selectedElement.fontWeight >= 600;
   const isItalic = selectedElement.fontStyle === 'italic';
 
@@ -437,12 +448,33 @@ export function FontControls() {
       </div>
 
       <div className="space-y-2">
-        <Label>Font Size: {selectedElement.fontSize}px</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="font-size-slider">
+            Font Size: {selectedElement.fontSize}px
+          </Label>
+          <Input
+            id="font-size-input"
+            type="number"
+            min={FONT_SIZE_MIN}
+            max={FONT_SIZE_MAX}
+            step={1}
+            value={selectedElement.fontSize}
+            onChange={(e) => {
+              const value = Number.parseInt(e.target.value, 10);
+              if (!Number.isNaN(value)) {
+                handleFontSizeChange(value);
+              }
+            }}
+            className="h-8 w-20 text-xs"
+            aria-label="Font size in pixels"
+          />
+        </div>
         <Slider
+          id="font-size-slider"
           value={[selectedElement.fontSize]}
-          onValueChange={([value]) => updateSelectedElement({ fontSize: value })}
-          min={8}
-          max={200}
+          onValueChange={([value]) => handleFontSizeChange(value)}
+          min={FONT_SIZE_MIN}
+          max={FONT_SIZE_MAX}
           step={1}
           className="w-full"
         />
